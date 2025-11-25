@@ -15,8 +15,7 @@ import {
   Download,
   Upload,
   Calendar,
-  AlertTriangle,
-  X
+  AlertTriangle
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -110,48 +109,6 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  // API Key Check State
-  const [isApiKeySet, setIsApiKeySet] = useState<boolean>(true); // Default to true to avoid flash, check in effect
-  const [showApiKeyWarning, setShowApiKeyWarning] = useState<boolean>(false);
-  const [isAiStudio, setIsAiStudio] = useState<boolean>(false);
-
-  useEffect(() => {
-    const checkApiKey = async () => {
-      if ('aistudio' in window) {
-        setIsAiStudio(true);
-        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
-        setIsApiKeySet(hasKey);
-        setShowApiKeyWarning(!hasKey);
-      } else {
-        setIsAiStudio(false);
-        // Safely check environment variable
-        try {
-          // We access it this way to avoid ReferenceError if process is undefined in browser
-          // and to support build-time string replacement
-          const key = process.env.API_KEY;
-          const hasKey = !!key;
-          setIsApiKeySet(hasKey);
-          setShowApiKeyWarning(!hasKey);
-        } catch (e) {
-          console.warn("API Key check failed (process not defined), assuming missing.");
-          setIsApiKeySet(false);
-          setShowApiKeyWarning(true);
-        }
-      }
-    };
-    checkApiKey();
-  }, []);
-
-  const handleSelectApiKey = async () => {
-    if ('aistudio' in window) {
-      const success = await (window as any).aistudio.openSelectKey();
-      if (success) {
-        setIsApiKeySet(true);
-        setShowApiKeyWarning(false);
-      }
-    }
-  };
 
   useEffect(() => {
     localStorage.setItem('coachingSession', JSON.stringify(data));
@@ -349,69 +306,6 @@ const App: React.FC = () => {
     </button>
   );
 
-  // --- API Key Missing Screen ---
-  if (showApiKeyWarning) {
-    return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-200">
-          <div className="bg-amber-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="w-8 h-8 text-amber-500" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-800 mb-3">Coaching Companion</h1>
-          
-          {isAiStudio ? (
-            <>
-              <p className="text-slate-600 mb-8 leading-relaxed">
-                To generate summaries and insights, please connect your Google Cloud API Key.
-              </p>
-              <button
-                onClick={handleSelectApiKey}
-                className="w-full bg-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center"
-              >
-                <Sparkles className="w-5 h-5 mr-2" />
-                Connect API Key
-              </button>
-            </>
-          ) : (
-            <div className="text-left">
-              <p className="text-amber-600 font-semibold mb-2 text-center">API Key Missing</p>
-              <p className="text-slate-600 mb-6 text-center text-sm">
-                AI features will be unavailable.
-              </p>
-              
-              <div className="bg-slate-100 p-4 rounded-lg text-sm text-slate-700 border border-slate-200 mb-6">
-                <p className="font-bold mb-2">Vercel Setup:</p>
-                <ol className="list-decimal pl-4 space-y-2">
-                  <li>Go to <strong>Settings</strong> {'>'} <strong>Environment Variables</strong>.</li>
-                  <li>Add <code>API_KEY</code> with your key value.</li>
-                  <li><strong>Redeploy</strong> (important!).</li>
-                </ol>
-              </div>
-              
-              <button
-                onClick={() => setShowApiKeyWarning(false)}
-                className="w-full bg-white text-slate-700 font-semibold py-2 px-6 rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors shadow-sm mb-4"
-              >
-                Continue without AI
-              </button>
-
-              <div className="text-center text-sm">
-                <a 
-                  href="https://aistudio.google.com/app/apikey" 
-                  target="_blank" 
-                  rel="noreferrer" 
-                  className="text-blue-600 hover:text-blue-800 underline"
-                >
-                  Get API Key
-                </a>
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
-
   // --- Main App Render ---
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
@@ -444,15 +338,6 @@ const App: React.FC = () => {
                 onChange={(e) => setData({...data, date: e.target.value})}
               />
              </div>
-             {!isApiKeySet && (
-               <button 
-                 onClick={() => setShowApiKeyWarning(true)}
-                 className="p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-colors"
-                 title="AI Features Disabled (Missing Key)"
-               >
-                 <AlertTriangle size={20} />
-               </button>
-             )}
           </div>
         </div>
       </header>
@@ -885,11 +770,11 @@ const App: React.FC = () => {
                    </div>
                    <button 
                     onClick={handleGenerateSummary}
-                    disabled={isGenerating || !isApiKeySet}
+                    disabled={isGenerating}
                     className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
                    >
                      <Sparkles className="w-4 h-4" />
-                     <span>{isApiKeySet ? "Finish & Summarize" : "API Key Missing"}</span>
+                     <span>Finish & Summarize</span>
                    </button>
                 </div>
               </div>
