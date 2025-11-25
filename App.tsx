@@ -16,7 +16,8 @@ import {
   Upload,
   Calendar,
   AlertTriangle,
-  FileText
+  FileText,
+  Key
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -114,11 +115,18 @@ const App: React.FC = () => {
   const [activeTab, setActiveTab] = useState<TabView>(TabView.PROFILE);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState<string>('');
+  const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem('coachingSession', JSON.stringify(data));
   }, [data]);
+
+  useEffect(() => {
+    if (apiKey) {
+      localStorage.setItem('gemini_api_key', apiKey);
+    }
+  }, [apiKey]);
 
   // Sync Profile Vision & I AMs to Explore tab automatically
   useEffect(() => {
@@ -213,8 +221,12 @@ const App: React.FC = () => {
   };
 
   const handleGenerateSummary = async () => {
+    if (!apiKey) {
+      alert("Please enter your Google API Key in the Extend tab to generate a summary.");
+      return;
+    }
     setIsGenerating(true);
-    const summary = await generateSessionSummary(data);
+    const summary = await generateSessionSummary(data, apiKey);
     setGeneratedSummary(summary);
     setIsGenerating(false);
     setActiveTab(TabView.SUMMARY);
@@ -230,7 +242,7 @@ const App: React.FC = () => {
     const hasData = data.engage.wins || data.explore.conversationNotes || data.extend.keyInsight;
     
     if (hasData) {
-      const summaryText = await generateBriefSummary(data);
+      const summaryText = await generateBriefSummary(data, apiKey);
       
       // Filter empty steps
       const activeSteps = data.express.actionSteps.filter(s => s.trim().length > 0);
@@ -407,7 +419,7 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="max-w-5xl mx-auto px-4 py-6">
         
-        {/* Navigation Tabs (Mobile optimized: scrollable) */}
+        {/* Navigation Tabs (Mobile optimised: scrollable) */}
         <div className="flex overflow-x-auto space-x-2 mb-6 pb-2 md:pb-0 scrollbar-hide">
           <NavButton tab={TabView.PROFILE} icon={User} label="Profile" />
           <NavButton tab={TabView.ENGAGE} icon={MessageCircle} label="Engage" />
@@ -820,23 +832,40 @@ const App: React.FC = () => {
                   rows={4}
                 />
                 
-                <div className="bg-orange-50 p-6 rounded-lg border border-orange-100 flex items-center justify-between">
-                   <div>
+                <div className="bg-orange-50 p-6 rounded-lg border border-orange-100 flex flex-col md:flex-row md:items-end gap-4 justify-between">
+                   <div className="flex-grow">
                      <label className="block text-sm font-semibold text-orange-900 mb-1">When are we meeting next?</label>
                      <input 
                       type="datetime-local" 
-                      className="bg-white border border-orange-200 rounded px-3 py-2 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
+                      className="w-full bg-white border border-orange-200 rounded px-3 py-2 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
                       value={data.extend.nextMeeting}
                       onChange={(e) => updateSection('extend', 'nextMeeting', e.target.value)}
                      />
                    </div>
+                   
+                   <div className="flex-grow">
+                     <label className="block text-sm font-semibold text-orange-900 mb-1">Google API Key</label>
+                     <div className="relative">
+                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                          <Key className="h-4 w-4 text-orange-400" />
+                        </div>
+                        <input 
+                          type="password" 
+                          placeholder="Paste API Key here..."
+                          className="w-full bg-white border border-orange-200 rounded px-3 py-2 pl-9 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
+                          value={apiKey}
+                          onChange={(e) => setApiKey(e.target.value)}
+                        />
+                     </div>
+                   </div>
+
                    <button 
                     onClick={handleGenerateSummary}
                     disabled={isGenerating}
-                    className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
+                    className="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap h-11"
                    >
                      <Sparkles className="w-4 h-4" />
-                     <span>Finish & Summarize</span>
+                     <span>Finish & Summarise</span>
                    </button>
                 </div>
               </div>

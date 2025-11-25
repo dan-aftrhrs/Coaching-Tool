@@ -1,29 +1,22 @@
 import { GoogleGenAI } from "@google/genai";
 import { SessionData } from "../types";
 
-// ============================================================================
-// API KEY CONFIGURATION
-// ============================================================================
-// Please paste your Gemini API key between the quotes below.
-// Example: const API_KEY = "AIzaSy...";
-// You can obtain a key from: https://aistudio.google.com/app/apikey
-const API_KEY = "AIzaSyAWHL01YKsxBnoEqJcrkU6vL7al6UPU69I"; 
-// ============================================================================
-
-const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: API_KEY });
+const getAIClient = (apiKey: string) => {
+  return new GoogleGenAI({ apiKey: apiKey });
 };
 
-export const generateBriefSummary = async (data: SessionData): Promise<string> => {
+export const generateBriefSummary = async (data: SessionData, apiKey: string): Promise<string> => {
+  if (!apiKey) return "API Key missing.";
+  
   try {
-    const ai = getAIClient();
+    const ai = getAIClient(apiKey);
     
-    // Check if there is enough data to summarize
+    // Check if there is enough data to summarise
     const hasData = data.engage.wins || data.explore.conversationNotes || data.extend.keyInsight;
     if (!hasData) return "No notes recorded.";
 
     const prompt = `
-      Analyze the following coaching session notes and provide a summary in LESS THAN 30 WORDS.
+      Analyse the following coaching session notes and provide a summary in LESS THAN 30 WORDS.
       Focus on the key breakthrough or main theme.
       Do NOT list the action steps in this summary, just the core insight or win.
       
@@ -44,9 +37,11 @@ export const generateBriefSummary = async (data: SessionData): Promise<string> =
   }
 };
 
-export const generateSessionSummary = async (data: SessionData): Promise<string> => {
+export const generateSessionSummary = async (data: SessionData, apiKey: string): Promise<string> => {
+  if (!apiKey) return "Please enter your Gemini API Key in the field provided.";
+
   try {
-    const ai = getAIClient();
+    const ai = getAIClient(apiKey);
     
     const actionStepsList = data.express.actionSteps
       .filter(step => step.trim().length > 0)
@@ -58,7 +53,7 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
       You are Dan, an expert executive coach. 
       Write a session summary email to my coachee, ${data.coacheeName || 'Friend'}.
       
-      TONE: Casual, warm, and encouraging.
+      TONE: Casual, warm, and encouraging. Use UK English spelling (e.g. realised, colour, programme, centre).
       
       DATA FROM SESSION:
       - Coachee Vision: ${data.profile.vision}
@@ -84,8 +79,8 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
       1. Salutation: "Hello ${data.coacheeName ? data.coacheeName.split(' ')[0] : 'there'},"
       2. Casual Opening: "It was good to chat with you! Here are some notes from our session."
       3. Encouragement: Write a short paragraph encouraging them on their breakthrough regarding their struggles. Explicitly mention some of the struggles or obstacles they overcame or are facing (from the data above).
-      4. Summary: "We explored..." (Summarize the important points of the conversation).
-      5. "Action Plan:" (List the action steps EXACTLY as they appear in the data above. Do not summarize them).
+      4. Summary: "We explored..." (Summarise the important points of the conversation).
+      5. "Action Plan:" (List the action steps EXACTLY as they appear in the data above. Do not summarise them).
       6. "Takeaway:" (The Key Insight EXACTLY as written above).
       7. "Prayer Point:" (Rephrase the prayer point to start with something like "I'll be praying about...").
       8. "Next Meeting:" "Next meeting is in the calendar for ${data.extend.nextMeeting || '[Date]'}."
@@ -100,16 +95,19 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
     return response.text || "Unable to generate summary.";
   } catch (error) {
     console.error("Error generating summary:", error);
-    return "Error generating summary. Please check your API key configuration in services/geminiService.ts.";
+    return "Error generating summary. Please check your API key.";
   }
 };
 
-export const generateReflectiveQuestion = async (exploreNotes: string): Promise<string> => {
+export const generateReflectiveQuestion = async (exploreNotes: string, apiKey: string): Promise<string> => {
+  if (!apiKey) return "Add API Key for AI suggestions.";
+
   try {
-    const ai = getAIClient();
+    const ai = getAIClient(apiKey);
     
     const prompt = `
       I am a coach. Based on these notes from a coachee conversation, suggest ONE powerful, open-ended reflective question I should ask them to deepen their thinking.
+      Use UK English spelling.
       
       Conversation Notes:
       "${exploreNotes}"
