@@ -15,7 +15,7 @@ import {
   Download,
   Upload,
   Calendar,
-  FileJson
+  AlertTriangle
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -112,15 +112,20 @@ const App: React.FC = () => {
 
   // API Key Check State
   const [isApiKeySet, setIsApiKeySet] = useState<boolean>(false);
+  const [isAiStudio, setIsAiStudio] = useState<boolean>(false);
 
   useEffect(() => {
     const checkApiKey = async () => {
       if ('aistudio' in window) {
+        setIsAiStudio(true);
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         setIsApiKeySet(hasKey);
       } else {
-        // Fallback for self-hosted environments where .env might be used directly
-        setIsApiKeySet(true); 
+        setIsAiStudio(false);
+        // Check if the API key is present in the environment variables
+        // This handles Vercel/Production deployments where process.env.API_KEY should be set
+        const hasEnvKey = !!process.env.API_KEY;
+        setIsApiKeySet(hasEnvKey);
       }
     };
     checkApiKey();
@@ -336,25 +341,61 @@ const App: React.FC = () => {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-200">
-          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <Sparkles className="w-8 h-8 text-blue-600" />
+          <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800 mb-3">Coaching Companion</h1>
-          <p className="text-slate-600 mb-8 leading-relaxed">
-            To generate summaries and insights, please connect your Google Cloud API Key.
-          </p>
-          <button
-            onClick={handleSelectApiKey}
-            className="w-full bg-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center"
-          >
-            <Sparkles className="w-5 h-5 mr-2" />
-            Connect API Key
-          </button>
-          <div className="mt-6 text-xs text-slate-400">
-            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">
-              Billing & API Information
-            </a>
-          </div>
+          
+          {isAiStudio ? (
+            <>
+              <p className="text-slate-600 mb-8 leading-relaxed">
+                To generate summaries and insights, please connect your Google Cloud API Key.
+              </p>
+              <button
+                onClick={handleSelectApiKey}
+                className="w-full bg-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center"
+              >
+                <Sparkles className="w-5 h-5 mr-2" />
+                Connect API Key
+              </button>
+              <div className="mt-6 text-xs text-slate-400">
+                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">
+                  Billing & API Information
+                </a>
+              </div>
+            </>
+          ) : (
+            <div className="text-left">
+              <p className="text-red-600 font-semibold mb-2 text-center">API Key Configuration Missing</p>
+              <p className="text-slate-600 mb-6 text-center text-sm">
+                The application cannot connect to the AI service because the <code>API_KEY</code> environment variable is not set.
+              </p>
+              
+              <div className="bg-slate-100 p-4 rounded-lg text-sm text-slate-700 border border-slate-200 mb-6">
+                <p className="font-bold mb-2">How to fix on Vercel:</p>
+                <ol className="list-decimal pl-4 space-y-2">
+                  <li>Go to your Vercel Project Settings.</li>
+                  <li>Select <strong>Environment Variables</strong> from the menu.</li>
+                  <li>Add a new variable:
+                    <div className="mt-1 font-mono bg-slate-200 px-2 py-1 rounded text-xs">Key: API_KEY</div>
+                    <div className="mt-1 font-mono bg-slate-200 px-2 py-1 rounded text-xs">Value: [Your Google AI API Key]</div>
+                  </li>
+                  <li><strong>Redeploy</strong> your application for changes to take effect.</li>
+                </ol>
+              </div>
+              
+              <div className="text-center text-sm">
+                <a 
+                  href="https://aistudio.google.com/app/apikey" 
+                  target="_blank" 
+                  rel="noreferrer" 
+                  className="text-blue-600 hover:text-blue-800 underline font-medium"
+                >
+                  Get a Gemini API Key here
+                </a>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
