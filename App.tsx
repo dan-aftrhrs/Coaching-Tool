@@ -15,7 +15,8 @@ import {
   Download,
   Upload,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  X
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -111,7 +112,8 @@ const App: React.FC = () => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // API Key Check State
-  const [isApiKeySet, setIsApiKeySet] = useState<boolean>(false);
+  const [isApiKeySet, setIsApiKeySet] = useState<boolean>(true); // Default to true to avoid flash, check in effect
+  const [showApiKeyWarning, setShowApiKeyWarning] = useState<boolean>(false);
   const [isAiStudio, setIsAiStudio] = useState<boolean>(false);
 
   useEffect(() => {
@@ -120,12 +122,22 @@ const App: React.FC = () => {
         setIsAiStudio(true);
         const hasKey = await (window as any).aistudio.hasSelectedApiKey();
         setIsApiKeySet(hasKey);
+        setShowApiKeyWarning(!hasKey);
       } else {
         setIsAiStudio(false);
-        // Check if the API key is present in the environment variables
-        // This handles Vercel/Production deployments where process.env.API_KEY should be set
-        const hasEnvKey = !!process.env.API_KEY;
-        setIsApiKeySet(hasEnvKey);
+        // Safely check environment variable
+        try {
+          // We access it this way to avoid ReferenceError if process is undefined in browser
+          // and to support build-time string replacement
+          const key = process.env.API_KEY;
+          const hasKey = !!key;
+          setIsApiKeySet(hasKey);
+          setShowApiKeyWarning(!hasKey);
+        } catch (e) {
+          console.warn("API Key check failed (process not defined), assuming missing.");
+          setIsApiKeySet(false);
+          setShowApiKeyWarning(true);
+        }
       }
     };
     checkApiKey();
@@ -136,6 +148,7 @@ const App: React.FC = () => {
       const success = await (window as any).aistudio.openSelectKey();
       if (success) {
         setIsApiKeySet(true);
+        setShowApiKeyWarning(false);
       }
     }
   };
@@ -337,12 +350,12 @@ const App: React.FC = () => {
   );
 
   // --- API Key Missing Screen ---
-  if (!isApiKeySet) {
+  if (showApiKeyWarning) {
     return (
       <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-200">
-          <div className="bg-red-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
-            <AlertTriangle className="w-8 h-8 text-red-500" />
+          <div className="bg-amber-50 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-amber-500" />
           </div>
           <h1 className="text-2xl font-bold text-slate-800 mb-3">Coaching Companion</h1>
           
@@ -358,40 +371,38 @@ const App: React.FC = () => {
                 <Sparkles className="w-5 h-5 mr-2" />
                 Connect API Key
               </button>
-              <div className="mt-6 text-xs text-slate-400">
-                <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">
-                  Billing & API Information
-                </a>
-              </div>
             </>
           ) : (
             <div className="text-left">
-              <p className="text-red-600 font-semibold mb-2 text-center">API Key Configuration Missing</p>
+              <p className="text-amber-600 font-semibold mb-2 text-center">API Key Missing</p>
               <p className="text-slate-600 mb-6 text-center text-sm">
-                The application cannot connect to the AI service because the <code>API_KEY</code> environment variable is not set.
+                AI features will be unavailable.
               </p>
               
               <div className="bg-slate-100 p-4 rounded-lg text-sm text-slate-700 border border-slate-200 mb-6">
-                <p className="font-bold mb-2">How to fix on Vercel:</p>
+                <p className="font-bold mb-2">Vercel Setup:</p>
                 <ol className="list-decimal pl-4 space-y-2">
-                  <li>Go to your Vercel Project Settings.</li>
-                  <li>Select <strong>Environment Variables</strong> from the menu.</li>
-                  <li>Add a new variable:
-                    <div className="mt-1 font-mono bg-slate-200 px-2 py-1 rounded text-xs">Key: API_KEY</div>
-                    <div className="mt-1 font-mono bg-slate-200 px-2 py-1 rounded text-xs">Value: [Your Google AI API Key]</div>
-                  </li>
-                  <li><strong>Redeploy</strong> your application for changes to take effect.</li>
+                  <li>Go to <strong>Settings</strong> {'>'} <strong>Environment Variables</strong>.</li>
+                  <li>Add <code>API_KEY</code> with your key value.</li>
+                  <li><strong>Redeploy</strong> (important!).</li>
                 </ol>
               </div>
               
+              <button
+                onClick={() => setShowApiKeyWarning(false)}
+                className="w-full bg-white text-slate-700 font-semibold py-2 px-6 rounded-lg border border-slate-300 hover:bg-slate-50 transition-colors shadow-sm mb-4"
+              >
+                Continue without AI
+              </button>
+
               <div className="text-center text-sm">
                 <a 
                   href="https://aistudio.google.com/app/apikey" 
                   target="_blank" 
                   rel="noreferrer" 
-                  className="text-blue-600 hover:text-blue-800 underline font-medium"
+                  className="text-blue-600 hover:text-blue-800 underline"
                 >
-                  Get a Gemini API Key here
+                  Get API Key
                 </a>
               </div>
             </div>
@@ -433,6 +444,15 @@ const App: React.FC = () => {
                 onChange={(e) => setData({...data, date: e.target.value})}
               />
              </div>
+             {!isApiKeySet && (
+               <button 
+                 onClick={() => setShowApiKeyWarning(true)}
+                 className="p-2 text-amber-500 hover:bg-amber-50 rounded-full transition-colors"
+                 title="AI Features Disabled (Missing Key)"
+               >
+                 <AlertTriangle size={20} />
+               </button>
+             )}
           </div>
         </div>
       </header>
@@ -865,11 +885,11 @@ const App: React.FC = () => {
                    </div>
                    <button 
                     onClick={handleGenerateSummary}
-                    disabled={isGenerating}
-                    className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70"
+                    disabled={isGenerating || !isApiKeySet}
+                    className="flex items-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-3 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed"
                    >
                      <Sparkles className="w-4 h-4" />
-                     <span>Finish & Summarize</span>
+                     <span>{isApiKeySet ? "Finish & Summarize" : "API Key Missing"}</span>
                    </button>
                 </div>
               </div>

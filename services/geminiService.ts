@@ -2,9 +2,18 @@ import { GoogleGenAI } from "@google/genai";
 import { SessionData } from "../types";
 
 const getAIClient = () => {
-  const apiKey = process.env.API_KEY;
+  let apiKey: string | undefined;
+  
+  try {
+    // Safely attempt to access the environment variable
+    // This try/catch block is critical for environments where accessing 'process' might throw
+    apiKey = process.env.API_KEY;
+  } catch (e) {
+    console.error("Failed to access process.env.API_KEY", e);
+  }
+
   if (!apiKey) {
-    throw new Error("API Key not found");
+    throw new Error("API Key not found. Please check your environment configuration.");
   }
   return new GoogleGenAI({ apiKey });
 };
@@ -93,7 +102,7 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
     return response.text || "Unable to generate summary.";
   } catch (error) {
     console.error("Error generating summary:", error);
-    return "Error generating summary. Please check your API key.";
+    return "Error generating summary. Please check your API key configuration.";
   }
 };
 
