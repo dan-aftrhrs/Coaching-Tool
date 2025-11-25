@@ -110,6 +110,31 @@ const App: React.FC = () => {
   const [generatedSummary, setGeneratedSummary] = useState<string>('');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // API Key Check State
+  const [isApiKeySet, setIsApiKeySet] = useState<boolean>(false);
+
+  useEffect(() => {
+    const checkApiKey = async () => {
+      if ('aistudio' in window) {
+        const hasKey = await (window as any).aistudio.hasSelectedApiKey();
+        setIsApiKeySet(hasKey);
+      } else {
+        // Fallback for self-hosted environments where .env might be used directly
+        setIsApiKeySet(true); 
+      }
+    };
+    checkApiKey();
+  }, []);
+
+  const handleSelectApiKey = async () => {
+    if ('aistudio' in window) {
+      const success = await (window as any).aistudio.openSelectKey();
+      if (success) {
+        setIsApiKeySet(true);
+      }
+    }
+  };
+
   useEffect(() => {
     localStorage.setItem('coachingSession', JSON.stringify(data));
   }, [data]);
@@ -306,6 +331,36 @@ const App: React.FC = () => {
     </button>
   );
 
+  // --- API Key Missing Screen ---
+  if (!isApiKeySet) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-4">
+        <div className="bg-white p-8 rounded-xl shadow-lg max-w-md w-full text-center border border-slate-200">
+          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-6">
+            <Sparkles className="w-8 h-8 text-blue-600" />
+          </div>
+          <h1 className="text-2xl font-bold text-slate-800 mb-3">Coaching Companion</h1>
+          <p className="text-slate-600 mb-8 leading-relaxed">
+            To generate summaries and insights, please connect your Google Cloud API Key.
+          </p>
+          <button
+            onClick={handleSelectApiKey}
+            className="w-full bg-blue-600 text-white font-semibold py-3.5 px-6 rounded-lg hover:bg-blue-700 transition-colors shadow-md flex items-center justify-center"
+          >
+            <Sparkles className="w-5 h-5 mr-2" />
+            Connect API Key
+          </button>
+          <div className="mt-6 text-xs text-slate-400">
+            <a href="https://ai.google.dev/gemini-api/docs/billing" target="_blank" rel="noreferrer" className="underline hover:text-slate-600">
+              Billing & API Information
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // --- Main App Render ---
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
       {/* Header */}
