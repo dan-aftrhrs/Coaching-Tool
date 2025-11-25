@@ -15,7 +15,8 @@ import {
   Download,
   Upload,
   Calendar,
-  AlertTriangle
+  AlertTriangle,
+  FileText
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -23,7 +24,7 @@ import { TextArea } from './components/TextArea';
 import { QuestionBank } from './components/QuestionBank';
 
 const INITIAL_DATA: SessionData = {
-  clientName: '',
+  coacheeName: '',
   date: new Date().toISOString().split('T')[0],
   profile: {
     iamStatements: '',
@@ -71,6 +72,11 @@ const App: React.FC = () => {
         // Migration: Ensure profile exists
         if (!parsed.profile) {
           parsed.profile = { iamStatements: '', vision: '', pastMeetings: '', meetingHistory: [] };
+        }
+        
+        // Migration: clientName -> coacheeName
+        if (parsed.clientName && !parsed.coacheeName) {
+            parsed.coacheeName = parsed.clientName;
         }
         
         // Migration: Ensure meetingHistory exists
@@ -144,10 +150,66 @@ const App: React.FC = () => {
     const element = document.createElement("a");
     const file = new Blob([generatedSummary], {type: 'text/plain'});
     element.href = URL.createObjectURL(file);
-    element.download = `${data.clientName || 'Client'}_Session_Summary_${data.date}.txt`;
+    element.download = `${data.coacheeName || 'Coachee'}_Session_Summary_${data.date}.txt`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
+  };
+
+  const handleDownloadFullNotes = () => {
+    const lines: string[] = [];
+    lines.push(`COACHING SESSION NOTES`);
+    lines.push(`Coachee: ${data.coacheeName}`);
+    lines.push(`Date: ${data.date}`);
+    lines.push('========================================');
+
+    lines.push('\n[PROFILE]');
+    lines.push(`I AM Statements:\n${data.profile.iamStatements || 'N/A'}`);
+    lines.push(`Vision:\n${data.profile.vision || 'N/A'}`);
+
+    lines.push('\n[ENGAGE]');
+    lines.push(`Where have you seen the goodness of God lately?\n${data.engage.goodnessOfGod || 'N/A'}`);
+    lines.push(`What wins have you noticed?\n${data.engage.wins || 'N/A'}`);
+    lines.push(`What are you learning?\n${data.engage.learning || 'N/A'}`);
+    lines.push(`What could you improve?\n${data.engage.improvements || 'N/A'}`);
+    lines.push(`What's the next step forward?\n${data.engage.nextStepForward || 'N/A'}`);
+
+    lines.push('\n[EXPLORE]');
+    lines.push(`Conversation Notes:\n${data.explore.conversationNotes || 'N/A'}`);
+
+    lines.push('\n[EXPRESS]');
+    lines.push(`What are the very first steps?\n${data.express.firstSteps || 'N/A'}`);
+    lines.push(`What can you stick to even on your worst days?\n${data.express.stickToIt || 'N/A'}`);
+    lines.push(`When will you do this?\n${data.express.whenWillYouDoThis || 'N/A'}`);
+    lines.push(`What stops you? (Obstacles):\n${data.express.obstacles || 'N/A'}`);
+    lines.push(`Accountability: Who can you tell?\n${data.express.whoToTell || 'N/A'}`);
+    lines.push(`Consequences / Sacrifices:\n${data.express.sacrifices || 'N/A'}`);
+    lines.push(`Why is this important?\n${data.express.importance || 'N/A'}`);
+    lines.push(`Helpful reminders (visual cues):\n${data.express.visualCue || 'N/A'}`);
+    lines.push(`Encouragement / Coach Input:\n${data.express.encouragement || 'N/A'}`);
+    
+    lines.push('\nAction Plan:');
+    if (data.express.actionSteps.some(s => s.trim())) {
+      data.express.actionSteps.forEach((step, i) => {
+          if(step.trim()) lines.push(`${i+1}. ${step}`);
+      });
+    } else {
+      lines.push('N/A');
+    }
+
+    lines.push('\n[EXTEND]');
+    lines.push(`Key Insight:\n${data.extend.keyInsight || 'N/A'}`);
+    lines.push(`Prayer Point:\n${data.extend.prayerPoint || 'N/A'}`);
+    lines.push(`Next Meeting:\n${data.extend.nextMeeting || 'N/A'}`);
+
+    const blob = new Blob([lines.join('\n\n')], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${data.coacheeName || 'Session'}_FullNotes_${data.date}.txt`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleGenerateSummary = async () => {
@@ -191,7 +253,7 @@ const App: React.FC = () => {
       : data.profile.meetingHistory;
 
     const exportData = {
-      clientName: data.clientName,
+      coacheeName: data.coacheeName,
       profile: {
         iamStatements: data.profile.iamStatements,
         vision: data.profile.vision,
@@ -204,7 +266,7 @@ const App: React.FC = () => {
     const element = document.createElement("a");
     const file = new Blob([JSON.stringify(exportData, null, 2)], {type: 'application/json'});
     element.href = URL.createObjectURL(file);
-    element.download = `${data.clientName || 'Client'}_Profile_${data.date}.json`;
+    element.download = `${data.coacheeName || 'Coachee'}_Profile_${data.date}.json`;
     document.body.appendChild(element);
     element.click();
     document.body.removeChild(element);
@@ -225,7 +287,7 @@ const App: React.FC = () => {
         if (json.profile) {
           setData(prev => ({
             ...prev,
-            clientName: json.clientName || prev.clientName,
+            coacheeName: json.coacheeName || json.clientName || prev.coacheeName,
             profile: {
               ...prev.profile,
               iamStatements: json.profile.iamStatements || '',
@@ -326,10 +388,10 @@ const App: React.FC = () => {
              <div className="hidden md:flex space-x-2">
               <input 
                 type="text" 
-                placeholder="Client Name" 
+                placeholder="Coachee Name" 
                 className="bg-white text-slate-900 px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none placeholder-slate-400 shadow-sm"
-                value={data.clientName}
-                onChange={(e) => setData({...data, clientName: e.target.value})}
+                value={data.coacheeName}
+                onChange={(e) => setData({...data, coacheeName: e.target.value})}
               />
                <input 
                 type="date" 
@@ -364,7 +426,7 @@ const App: React.FC = () => {
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center">
                   <User className="w-6 h-6 mr-3 text-slate-500" />
-                  Client Profile
+                  Coachee Profile
                 </h2>
                 
                 <div className="flex space-x-3">
@@ -386,13 +448,13 @@ const App: React.FC = () => {
 
               <div className="grid md:grid-cols-2 gap-6 flex-grow">
                  <div className="md:col-span-2">
-                   <label className="block text-sm font-semibold text-slate-700 mb-1">Client Name</label>
+                   <label className="block text-sm font-semibold text-slate-700 mb-1">Coachee Name</label>
                    <input 
                       type="text" 
-                      placeholder="Enter Client Name" 
+                      placeholder="Enter Coachee Name" 
                       className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm text-slate-700 mb-4"
-                      value={data.clientName}
-                      onChange={(e) => setData({...data, clientName: e.target.value})}
+                      value={data.coacheeName}
+                      onChange={(e) => setData({...data, coacheeName: e.target.value})}
                     />
                  </div>
                 
@@ -632,7 +694,7 @@ const App: React.FC = () => {
                   onChange={(v) => updateSection('express', 'firstSteps', v)}
                 />
                 <TextArea 
-                  label="What can you stick to even on your worst days?" 
+                  label="What could help you even on your worst days?" 
                   value={data.express.stickToIt}
                   onChange={(v) => updateSection('express', 'stickToIt', v)}
                 />
@@ -710,7 +772,7 @@ const App: React.FC = () => {
                 <div className="mt-6 border-t border-green-200 pt-6">
                    <TextArea 
                     label="Encouragement & Coach Input" 
-                    placeholder="Write a note of encouragement for the client..."
+                    placeholder="Write a note of encouragement for the coachee..."
                     value={data.express.encouragement}
                     onChange={(v) => updateSection('express', 'encouragement', v)}
                     className="mb-0"
@@ -797,14 +859,24 @@ const App: React.FC = () => {
                   <Sparkles className="w-6 h-6 mr-3 text-indigo-600" />
                   Session Summary
                 </h2>
-                <button 
-                  onClick={handleDownloadProfile}
-                  disabled={isGenerating}
-                  className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md"
-                >
-                   <Download className="w-4 h-4 mr-2" /> 
-                   {isGenerating ? "Saving..." : "Save Profile & History (JSON)"}
-                </button>
+                
+                <div className="flex space-x-2">
+                  <button 
+                    onClick={handleDownloadFullNotes}
+                    className="flex items-center px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium shadow-sm"
+                  >
+                     <FileText className="w-4 h-4 mr-2" /> 
+                     Download Full Notes
+                  </button>
+                  <button 
+                    onClick={handleDownloadProfile}
+                    disabled={isGenerating}
+                    className="flex items-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors text-sm font-medium shadow-md"
+                  >
+                     <Download className="w-4 h-4 mr-2" /> 
+                     {isGenerating ? "Saving..." : "Save Profile & History (JSON)"}
+                  </button>
+                </div>
               </div>
               <p className="text-slate-500 mb-4">Generated by Gemini. Review before sending.</p>
               

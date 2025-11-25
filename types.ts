@@ -44,7 +44,7 @@ export interface ExtendSection {
 }
 
 export interface SessionData {
-  clientName: string;
+  coacheeName: string;
   date: string;
   profile: ProfileSection;
   engage: EngageSection;

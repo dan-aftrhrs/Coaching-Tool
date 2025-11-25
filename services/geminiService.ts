@@ -1,8 +1,17 @@
 import { GoogleGenAI } from "@google/genai";
 import { SessionData } from "../types";
 
+// ============================================================================
+// API KEY CONFIGURATION
+// ============================================================================
+// Please paste your Gemini API key between the quotes below.
+// Example: const API_KEY = "AIzaSy...";
+// You can obtain a key from: https://aistudio.google.com/app/apikey
+const API_KEY = "AIzaSyAWHL01YKsxBnoEqJcrkU6vL7al6UPU69I"; 
+// ============================================================================
+
 const getAIClient = () => {
-  return new GoogleGenAI({ apiKey: process.env.API_KEY });
+  return new GoogleGenAI({ apiKey: API_KEY });
 };
 
 export const generateBriefSummary = async (data: SessionData): Promise<string> => {
@@ -44,41 +53,43 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
       .map((step, index) => `${index + 1}. ${step}`)
       .join('\n');
 
-    // Construct a structured prompt from the session data
+    // Construct a structured prompt based on the new specific requirements
     const prompt = `
       You are Dan, an expert executive coach. 
-      Write a session summary email to my client, ${data.clientName || 'Friend'}.
+      Write a session summary email to my coachee, ${data.coacheeName || 'Friend'}.
       
-      The tone should be: Casual, warm, and encouraging.
+      TONE: Casual, warm, and encouraging.
       
       DATA FROM SESSION:
-      - Client Vision: ${data.profile.vision}
-      - Client I AMs: ${data.profile.iamStatements}
+      - Coachee Vision: ${data.profile.vision}
+      - Coachee I AMs: ${data.profile.iamStatements}
       
       - Wins/Goodness: ${data.engage.goodnessOfGod} / ${data.engage.wins}
       - Learning: ${data.engage.learning}
+      - Improvements/Struggles/Obstacles: ${data.engage.improvements} / ${data.express.obstacles}
       
-      - CONVERSATION NOTES (Use direct quotes if possible): 
+      - CONVERSATION NOTES: 
         "${data.explore.conversationNotes}"
       
-      - ACTION PLAN:
+      - ACTION PLAN (Keep exactly as written):
         ${actionStepsList || "No specific steps recorded."}
       
-      - KEY INSIGHT (Takeaway): ${data.extend.keyInsight}
+      - KEY INSIGHT (Keep exactly as written): ${data.extend.keyInsight}
       - PRAYER POINT: ${data.extend.prayerPoint}
       - NEXT MEETING: ${data.extend.nextMeeting}
       
       - ENCOURAGEMENT FROM DAN: ${data.express.encouragement}
 
       EMAIL STRUCTURE:
-      1. Salutation: "Hello ${data.clientName || 'there'},"
-      2. Opening: "It was good to chat with you! Here are your notes from our session." (Casual tone).
-      3. Summary of Notes: Summarize what we discussed, but strictly include 2-3 direct quotes from the conversation notes provided above to make it personal.
-      4. "Here is your Action Plan:" (List the steps clearly).
-      5. "Takeaway:" (The Key Insight).
-      6. "Prayer Point:" (The Prayer Point).
-      7. "Next Meeting:" (The Next Meeting time).
-      8. Closing: "Cheering you on,\nDan"
+      1. Salutation: "Hello ${data.coacheeName ? data.coacheeName.split(' ')[0] : 'there'},"
+      2. Casual Opening: "It was good to chat with you! Here are some notes from our session."
+      3. Encouragement: Write a short paragraph encouraging them on their breakthrough regarding their struggles. Explicitly mention some of the struggles or obstacles they overcame or are facing (from the data above).
+      4. Summary: "We explored..." (Summarize the important points of the conversation).
+      5. "Action Plan:" (List the action steps EXACTLY as they appear in the data above. Do not summarize them).
+      6. "Takeaway:" (The Key Insight EXACTLY as written above).
+      7. "Prayer Point:" (Rephrase the prayer point to start with something like "I'll be praying about...").
+      8. "Next Meeting:" "Next meeting is in the calendar for ${data.extend.nextMeeting || '[Date]'}."
+      9. Closing: "Cheering you on,\nDan"
     `;
 
     const response = await ai.models.generateContent({
@@ -89,7 +100,7 @@ export const generateSessionSummary = async (data: SessionData): Promise<string>
     return response.text || "Unable to generate summary.";
   } catch (error) {
     console.error("Error generating summary:", error);
-    return "Error generating summary. Please check your API key configuration.";
+    return "Error generating summary. Please check your API key configuration in services/geminiService.ts.";
   }
 };
 
@@ -98,7 +109,7 @@ export const generateReflectiveQuestion = async (exploreNotes: string): Promise<
     const ai = getAIClient();
     
     const prompt = `
-      I am a coach. Based on these notes from a client conversation, suggest ONE powerful, open-ended reflective question I should ask them to deepen their thinking.
+      I am a coach. Based on these notes from a coachee conversation, suggest ONE powerful, open-ended reflective question I should ask them to deepen their thinking.
       
       Conversation Notes:
       "${exploreNotes}"
