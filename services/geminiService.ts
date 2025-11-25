@@ -2,7 +2,7 @@ import { GoogleGenAI } from "@google/genai";
 import { SessionData } from "../types";
 
 const getAIClient = (apiKey: string) => {
-  return new GoogleGenAI({ apiKey: apiKey });
+  return new GoogleGenAI({ apiKey: apiKey.trim() });
 };
 
 export const generateBriefSummary = async (data: SessionData, apiKey: string): Promise<string> => {
@@ -38,7 +38,7 @@ export const generateBriefSummary = async (data: SessionData, apiKey: string): P
 };
 
 export const generateSessionSummary = async (data: SessionData, apiKey: string): Promise<string> => {
-  if (!apiKey) return "Please enter your Gemini API Key in the field provided.";
+  if (!apiKey) return "Please enter your Gemini API Key in the field provided in the Extend tab.";
 
   try {
     const ai = getAIClient(apiKey);
@@ -92,10 +92,15 @@ export const generateSessionSummary = async (data: SessionData, apiKey: string):
       contents: prompt,
     });
 
+    if (!response.text && response.candidates && response.candidates[0]) {
+       return `AI Generation stopped. Reason: ${response.candidates[0].finishReason}. (Check if your notes trigger safety filters).`;
+    }
+
     return response.text || "Unable to generate summary.";
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error generating summary:", error);
-    return "Error generating summary. Please check your API key.";
+    const errorMessage = error.message || String(error);
+    return `Error generating summary: ${errorMessage}\n\nPlease check that your API Key is valid and has access to gemini-2.5-flash.`;
   }
 };
 

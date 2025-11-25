@@ -124,7 +124,7 @@ const App: React.FC = () => {
 
   useEffect(() => {
     if (apiKey) {
-      localStorage.setItem('gemini_api_key', apiKey);
+      localStorage.setItem('gemini_api_key', apiKey.trim());
     }
   }, [apiKey]);
 
@@ -226,6 +226,7 @@ const App: React.FC = () => {
       return;
     }
     setIsGenerating(true);
+    setGeneratedSummary("Generating summary... please wait.");
     const summary = await generateSessionSummary(data, apiKey);
     setGeneratedSummary(summary);
     setIsGenerating(false);
@@ -851,7 +852,7 @@ const App: React.FC = () => {
                         </div>
                         <input 
                           type="password" 
-                          placeholder="Paste API Key here..."
+                          placeholder="Paste API Key (starts with AIza...)"
                           className="w-full bg-white border border-orange-200 rounded px-3 py-2 pl-9 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
                           value={apiKey}
                           onChange={(e) => setApiKey(e.target.value)}
