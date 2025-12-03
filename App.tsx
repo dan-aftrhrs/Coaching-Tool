@@ -187,12 +187,12 @@ const App: React.FC = () => {
 
     lines.push('\n[EXPRESS]');
     lines.push(`What are the very first steps?\n${data.express.firstSteps || 'N/A'}`);
-    lines.push(`What can you stick to even on your worst days?\n${data.express.stickToIt || 'N/A'}`);
+    lines.push(`Why is this important?\n${data.express.stickToIt || 'N/A'}`);
     lines.push(`When will you do this?\n${data.express.whenWillYouDoThis || 'N/A'}`);
     lines.push(`What stops you? (Obstacles):\n${data.express.obstacles || 'N/A'}`);
     lines.push(`Accountability: Who can you tell?\n${data.express.whoToTell || 'N/A'}`);
     lines.push(`Consequences / Sacrifices:\n${data.express.sacrifices || 'N/A'}`);
-    lines.push(`Why is this important?\n${data.express.importance || 'N/A'}`);
+    lines.push(`What can you stick to even on your worst days?\n${data.express.importance || 'N/A'}`);
     lines.push(`Helpful reminders (visual cues):\n${data.express.visualCue || 'N/A'}`);
     lines.push(`Encouragement / Coach Input:\n${data.express.encouragement || 'N/A'}`);
     
