@@ -23,7 +23,10 @@ import {
   Settings,
   X,
   RotateCcw,
-  Compass
+  Compass,
+  Moon,
+  Sun,
+  Repeat
 } from 'lucide-react';
 import { SessionData, TabView, LabelConfig } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -113,7 +116,7 @@ const NavButton = ({
     className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 flex-grow md:flex-grow-0
       ${activeTab === tab 
         ? 'bg-blue-600 text-white shadow-md' 
-        : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+        : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700'}`}
   >
     <Icon size={18} />
     <span className="font-medium whitespace-nowrap">{label}</span>
@@ -150,29 +153,29 @@ const LabelSettingsModal: React.FC<LabelSettingsModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 animate-in fade-in duration-200">
-      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
-        <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
-          <h3 className="text-xl font-bold text-slate-800 flex items-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 animate-in fade-in duration-200 backdrop-blur-sm">
+      <div className="bg-white dark:bg-slate-800 rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col border border-slate-200 dark:border-slate-700">
+        <div className="p-6 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center sticky top-0 bg-white dark:bg-slate-800 rounded-t-xl z-10">
+          <h3 className="text-xl font-bold text-slate-800 dark:text-white flex items-center">
             <Settings className="w-5 h-5 mr-2" />
             Customize Questions
           </h3>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
             <X size={24} />
           </button>
         </div>
         
-        <div className="p-6 space-y-6">
-          <div className="flex space-x-2 border-b border-slate-200 pb-2">
+        <div className="p-6 space-y-6 bg-slate-50 dark:bg-slate-900">
+          <div className="flex space-x-2 border-b border-slate-200 dark:border-slate-700 pb-2">
             <button 
               onClick={() => setSettingsTab('engage')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'engage' ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-600' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'engage' ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-600 dark:bg-blue-900/40 dark:text-blue-200 dark:border-blue-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
             >
               Engage
             </button>
             <button 
               onClick={() => setSettingsTab('express')}
-              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'express' ? 'bg-green-100 text-green-700 border-b-2 border-green-600' : 'text-slate-500 hover:bg-slate-50'}`}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'express' ? 'bg-green-100 text-green-700 border-b-2 border-green-600 dark:bg-green-900/40 dark:text-green-200 dark:border-green-400' : 'text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'}`}
             >
               Express
             </button>
@@ -180,14 +183,14 @@ const LabelSettingsModal: React.FC<LabelSettingsModalProps> = ({
 
           <div className="space-y-6">
             {Object.entries(currentSection).map(([key, value]) => (
-              <div key={key} className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
-                <label className="block text-sm font-bold text-slate-800 mb-2">
+              <div key={key} className="bg-white dark:bg-slate-800 p-4 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm">
+                <label className="block text-sm font-bold text-slate-800 dark:text-slate-200 mb-2">
                   {formatKey(key)}
                 </label>
                 <textarea 
                   value={value}
                   onChange={(e) => handleLabelUpdate(settingsTab, key, e.target.value)}
-                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 text-base shadow-sm"
+                  className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-600 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 dark:text-slate-200 text-base shadow-sm"
                   rows={2}
                 />
               </div>
@@ -195,10 +198,10 @@ const LabelSettingsModal: React.FC<LabelSettingsModalProps> = ({
           </div>
         </div>
 
-        <div className="p-6 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-between items-center">
+        <div className="p-6 border-t border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 rounded-b-xl flex justify-between items-center">
             <button 
             onClick={() => resetLabels(settingsTab)}
-            className="flex items-center text-red-600 hover:text-red-700 text-sm font-medium"
+            className="flex items-center text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 text-sm font-medium"
           >
             <RotateCcw className="w-4 h-4 mr-2" /> Reset Defaults
           </button>
@@ -299,6 +302,12 @@ const App: React.FC = () => {
   // Settings Modal State
   const [showLabelSettings, setShowLabelSettings] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'engage' | 'express'>('engage');
+  
+  // Dark Mode State
+  const [isDarkMode, setIsDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode');
+    return saved ? JSON.parse(saved) : false;
+  });
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -319,6 +328,16 @@ const App: React.FC = () => {
   useEffect(() => {
     localStorage.setItem('coach_email', coachEmail.trim());
   }, [coachEmail]);
+  
+  // Dark Mode Effect
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(isDarkMode));
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [isDarkMode]);
 
   // Sync Profile Vision & I AMs to Explore tab automatically
   useEffect(() => {
@@ -627,7 +646,7 @@ const App: React.FC = () => {
 
   // --- Main App Render ---
   return (
-    <div className="min-h-screen bg-slate-50 pb-20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 pb-20 transition-colors duration-200">
       <LabelSettingsModal 
         isOpen={showLabelSettings}
         onClose={() => setShowLabelSettings(false)}
@@ -639,15 +658,15 @@ const App: React.FC = () => {
       />
 
       {/* Header */}
-      <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
+      <header className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10 shadow-sm transition-colors duration-200">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
           <div className="flex items-center space-x-2">
             <div className="bg-blue-600 p-2 rounded-md">
               <BookOpen className="text-white w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-lg font-bold text-slate-800">Coaching Companion</h1>
-              <p className="text-xs text-slate-500 hidden sm:block">4E Framework Note Taker</p>
+              <h1 className="text-lg font-bold text-slate-800 dark:text-slate-100">Coaching Companion</h1>
+              <p className="text-xs text-slate-500 dark:text-slate-400 hidden sm:block">4E Framework Note Taker</p>
             </div>
           </div>
           
@@ -656,17 +675,25 @@ const App: React.FC = () => {
               <input 
                 type="text" 
                 placeholder="Coachee Name" 
-                className="bg-white text-slate-900 px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none placeholder-slate-400 shadow-sm"
+                className="bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none placeholder-slate-400 dark:placeholder-slate-400 shadow-sm transition-colors"
                 value={data.coacheeName}
                 onChange={(e) => setData({...data, coacheeName: e.target.value})}
               />
                <input 
                 type="date" 
-                className="bg-white text-slate-900 px-3 py-2 border border-slate-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm"
+                className="bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 px-3 py-2 border border-slate-300 dark:border-slate-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none shadow-sm transition-colors"
                 value={data.date}
                 onChange={(e) => setData({...data, date: e.target.value})}
               />
              </div>
+             
+             <button
+              onClick={() => setIsDarkMode(!isDarkMode)}
+              className="p-2 bg-slate-100 dark:bg-slate-700 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              title="Toggle Dark Mode"
+            >
+              {isDarkMode ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
           </div>
         </div>
       </header>
@@ -685,14 +712,14 @@ const App: React.FC = () => {
         </div>
 
         {/* Content Containers */}
-        <div className="bg-white rounded-xl shadow-sm border border-slate-200 min-h-[600px] flex flex-col relative overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700 min-h-[600px] flex flex-col relative overflow-hidden transition-colors duration-200">
           
           {/* Tab: PROFILE */}
           {activeTab === TabView.PROFILE && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full">
               <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6 gap-4">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                  <User className="w-6 h-6 mr-3 text-slate-500" />
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center">
+                  <User className="w-6 h-6 mr-3 text-slate-500 dark:text-slate-400" />
                   Coachee Profile
                 </h2>
                 
@@ -706,7 +733,7 @@ const App: React.FC = () => {
                   />
                   <button 
                     onClick={() => fileInputRef.current?.click()}
-                    className="flex items-center px-4 py-2 bg-slate-100 text-slate-700 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium border border-slate-200"
+                    className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm font-medium border border-slate-200 dark:border-slate-600"
                   >
                     <Upload className="w-4 h-4 mr-2" /> Upload Profile
                   </button>
@@ -715,11 +742,11 @@ const App: React.FC = () => {
 
               <div className="grid md:grid-cols-2 gap-6 flex-grow">
                  <div className="md:col-span-2">
-                   <label className="block text-sm font-semibold text-slate-700 mb-1">Coachee Name</label>
+                   <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1">Coachee Name</label>
                    <input 
                       type="text" 
                       placeholder="Enter Coachee Name" 
-                      className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm text-slate-700 mb-4"
+                      className="w-full px-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors shadow-sm text-slate-700 dark:text-slate-100 mb-4 placeholder-slate-400 dark:placeholder-slate-500"
                       value={data.coacheeName}
                       onChange={(e) => setData({...data, coacheeName: e.target.value})}
                     />
@@ -742,22 +769,22 @@ const App: React.FC = () => {
                 />
                 
                 {/* Meeting History Section */}
-                <div className="md:col-span-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
-                  <h3 className="text-sm font-bold text-slate-700 mb-4 flex items-center">
-                    <Calendar className="w-4 h-4 mr-2 text-slate-500" />
+                <div className="md:col-span-2 bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700">
+                  <h3 className="text-sm font-bold text-slate-700 dark:text-slate-300 mb-4 flex items-center">
+                    <Calendar className="w-4 h-4 mr-2 text-slate-500 dark:text-slate-400" />
                     Previous Meetings History
                   </h3>
                   
                   {data.profile.meetingHistory.length === 0 ? (
-                    <div className="text-center py-6 text-slate-400 text-sm">
+                    <div className="text-center py-6 text-slate-400 dark:text-slate-500 text-sm">
                       No previous meetings recorded. Upload a profile file or complete a session to see history here.
                     </div>
                   ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 mb-4">
                       {data.profile.meetingHistory.map((meeting, idx) => (
-                        <div key={idx} className="bg-white p-3 rounded-lg shadow-sm border border-slate-200 hover:shadow-md transition-shadow">
-                          <div className="text-xs font-semibold text-blue-600 mb-1">{meeting.date}</div>
-                          <p className="text-slate-600 text-sm leading-snug whitespace-pre-line" title={meeting.summary}>
+                        <div key={idx} className="bg-white dark:bg-slate-800 p-3 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 hover:shadow-md transition-shadow">
+                          <div className="text-xs font-semibold text-blue-600 dark:text-blue-400 mb-1">{meeting.date}</div>
+                          <p className="text-slate-600 dark:text-slate-300 text-sm leading-snug whitespace-pre-line" title={meeting.summary}>
                             {meeting.summary}
                           </p>
                         </div>
@@ -772,7 +799,7 @@ const App: React.FC = () => {
                         const el = document.getElementById('legacy-notes');
                         if (el) el.style.display = el.style.display === 'none' ? 'block' : 'none';
                       }}
-                      className="text-xs text-slate-400 hover:text-slate-600 underline"
+                      className="text-xs text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 underline"
                     >
                       Toggle Legacy/General Notes
                     </button>
@@ -805,13 +832,13 @@ const App: React.FC = () => {
           {activeTab === TabView.ENGAGE && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full relative">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                  <MessageCircle className="w-6 h-6 mr-3 text-blue-500" />
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center">
+                  <MessageCircle className="w-6 h-6 mr-3 text-blue-500 dark:text-blue-400" />
                   Engage: Connection & Review
                 </h2>
                 <button 
                   onClick={() => { setSettingsTab('engage'); setShowLabelSettings(true); }}
-                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 hover:bg-blue-50 dark:hover:bg-slate-700 rounded-full transition-colors"
                   title="Customize Questions"
                 >
                   <Settings className="w-5 h-5" />
@@ -820,17 +847,17 @@ const App: React.FC = () => {
 
                {/* Previous Actions Display Block */}
                {data.engage.previousActionSteps && (
-                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
-                  <AlertTriangle className="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
+                <div className="mb-6 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700/50 rounded-lg p-4 flex items-start">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 dark:text-yellow-500 mr-3 flex-shrink-0 mt-0.5" />
                   <div className="flex-grow">
-                    <h3 className="text-sm font-bold text-yellow-800 mb-1">Actions from Last Session</h3>
-                    <div className="text-sm text-yellow-800 whitespace-pre-line leading-relaxed">
+                    <h3 className="text-sm font-bold text-yellow-800 dark:text-yellow-200 mb-1">Actions from Last Session</h3>
+                    <div className="text-sm text-yellow-800 dark:text-yellow-300 whitespace-pre-line leading-relaxed">
                       {data.engage.previousActionSteps}
                     </div>
                   </div>
                    <button 
                     onClick={() => updateSection('engage', 'previousActionSteps', '')}
-                    className="ml-2 text-yellow-400 hover:text-yellow-600"
+                    className="ml-2 text-yellow-400 hover:text-yellow-600 dark:hover:text-yellow-300"
                     title="Dismiss"
                    >
                      <X size={16} />
@@ -871,7 +898,7 @@ const App: React.FC = () => {
               <div className="mt-8 flex justify-between">
                  <button 
                   onClick={() => setActiveTab(TabView.PROFILE)} 
-                  className="flex items-center px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
                 >
                   <ChevronLeft className="w-5 h-5 mr-2"/> Back
                 </button>
@@ -889,7 +916,7 @@ const App: React.FC = () => {
           {activeTab === TabView.EXPLORE && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full">
               <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center">
                   <Compass className="w-6 h-6 mr-3 text-purple-500" />
                   Explore: Deep Dive
                 </h2>
@@ -897,16 +924,16 @@ const App: React.FC = () => {
 
               {/* Top Section: Vision & I AMs (Read-only reference) */}
               <div className="grid md:grid-cols-2 gap-6 mb-8">
-                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                   <h3 className="text-sm font-semibold text-purple-900 mb-2">Vision</h3>
-                   <div className="text-sm text-slate-700 whitespace-pre-wrap">
-                     {data.profile.vision || <span className="text-slate-400 italic">No vision defined in Profile.</span>}
+                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/50">
+                   <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">Vision</h3>
+                   <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                     {data.profile.vision || <span className="text-slate-400 dark:text-slate-500 italic">No vision defined in Profile.</span>}
                    </div>
                  </div>
-                 <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                   <h3 className="text-sm font-semibold text-purple-900 mb-2">I AM Statements</h3>
-                   <div className="text-sm text-slate-700 whitespace-pre-wrap">
-                     {data.profile.iamStatements || <span className="text-slate-400 italic">No I AM statements defined in Profile.</span>}
+                 <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/50">
+                   <h3 className="text-sm font-semibold text-purple-900 dark:text-purple-300 mb-2">I AM Statements</h3>
+                   <div className="text-sm text-slate-700 dark:text-slate-300 whitespace-pre-wrap">
+                     {data.profile.iamStatements || <span className="text-slate-400 dark:text-slate-500 italic">No I AM statements defined in Profile.</span>}
                    </div>
                  </div>
               </div>
@@ -914,8 +941,8 @@ const App: React.FC = () => {
               <div className="grid md:grid-cols-3 gap-8 flex-grow">
                 {/* Left Column: Toolkit */}
                 <div className="md:col-span-1 space-y-4">
-                  <div className="bg-slate-100 p-4 rounded-lg">
-                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Tips</h3>
+                  <div className="bg-slate-100 dark:bg-slate-900 p-4 rounded-lg">
+                    <h3 className="font-semibold text-slate-700 dark:text-slate-300 mb-3 text-sm uppercase tracking-wide">Tips</h3>
                     
                     <QuestionBank 
                       title="Direction Questions" 
@@ -961,7 +988,7 @@ const App: React.FC = () => {
               <div className="mt-8 flex justify-between">
                 <button 
                   onClick={() => setActiveTab(TabView.ENGAGE)} 
-                  className="flex items-center px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
                 >
                   <ChevronLeft className="w-5 h-5 mr-2"/> Back
                 </button>
@@ -979,13 +1006,13 @@ const App: React.FC = () => {
           {activeTab === TabView.EXPRESS && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
                <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center">
                   <Footprints className="w-6 h-6 mr-3 text-green-500" />
                   Express: Action Planning
                 </h2>
                 <button 
                   onClick={() => { setSettingsTab('express'); setShowLabelSettings(true); }}
-                  className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                  className="p-2 text-slate-400 dark:text-slate-500 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-full transition-colors"
                   title="Customize Questions"
                 >
                   <Settings className="w-5 h-5" />
@@ -1020,9 +1047,9 @@ const App: React.FC = () => {
               </div>
 
               {/* Flexible Plan Section (Moved Up) */}
-              <div className="bg-green-50 p-6 rounded-lg border border-green-100 mb-8">
+              <div className="bg-green-50 dark:bg-green-900/20 p-6 rounded-lg border border-green-100 dark:border-green-800/50 mb-8">
                 <div className="flex justify-between items-center mb-4">
-                  <h3 className="text-lg font-semibold text-green-900">The Plan</h3>
+                  <h3 className="text-lg font-semibold text-green-900 dark:text-green-300">The Plan</h3>
                 </div>
                 <div className="space-y-4">
                   {data.express.actionSteps.map((step, idx) => (
@@ -1034,13 +1061,13 @@ const App: React.FC = () => {
                         <input 
                           type="text"
                           placeholder={`Action Step ${idx + 1}`}
-                          className="w-full px-4 py-2 bg-white text-slate-900 border border-green-200 rounded-lg focus:ring-2 focus:ring-green-500 outline-none placeholder-slate-400"
+                          className="w-full px-4 py-2 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 border border-green-200 dark:border-green-700 rounded-lg focus:ring-2 focus:ring-green-500 outline-none placeholder-slate-400 dark:placeholder-slate-500"
                           value={step}
                           onChange={(e) => updateActionStep(idx, e.target.value)}
                         />
                          <button 
                             onClick={() => removeActionStep(idx)}
-                            className="text-slate-400 hover:text-red-600 p-2 hover:bg-red-50 rounded transition-colors"
+                            className="text-slate-400 dark:text-slate-500 hover:text-red-600 dark:hover:text-red-400 p-2 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                             title="Remove step"
                           >
                             <Trash2 size={18} />
@@ -1050,7 +1077,7 @@ const App: React.FC = () => {
                   ))}
                   <button 
                     onClick={addActionStep}
-                    className="flex items-center text-sm font-medium text-green-700 hover:text-green-900 mt-2 px-3 py-2 rounded hover:bg-green-100 transition-colors"
+                    className="flex items-center text-sm font-medium text-green-700 dark:text-green-400 hover:text-green-900 dark:hover:text-green-200 mt-2 px-3 py-2 rounded hover:bg-green-100 dark:hover:bg-green-900/30 transition-colors"
                   >
                     <Plus size={18} className="mr-1" /> Add Action Step
                   </button>
@@ -1092,8 +1119,15 @@ const App: React.FC = () => {
                 />
               </div>
 
-              {/* Encouragement Box (Moved to Bottom) */}
-              <div className="mb-8 pt-6 border-t border-slate-200">
+              {/* Encouragement Reminder & Box (Moved to Bottom) */}
+              <div className="mb-8 pt-6 border-t border-slate-200 dark:border-slate-700">
+                  <div className="mb-4 bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700/50 p-4 rounded-lg flex items-center">
+                    <Repeat className="w-5 h-5 text-indigo-600 dark:text-indigo-400 mr-3" />
+                    <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-200">
+                      Reminder: Ask the coachee to repeat their action steps back to you to ensure clarity and commitment.
+                    </p>
+                  </div>
+
                    <TextArea 
                     label={labels.express.encouragement}
                     placeholder="Write a note of encouragement for the coachee..."
@@ -1106,7 +1140,7 @@ const App: React.FC = () => {
               <div className="mt-8 flex justify-between">
                 <button 
                   onClick={() => setActiveTab(TabView.EXPLORE)} 
-                  className="flex items-center px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
                 >
                   <ChevronLeft className="w-5 h-5 mr-2"/> Back
                 </button>
@@ -1123,7 +1157,7 @@ const App: React.FC = () => {
           {/* Tab: EXTEND */}
           {activeTab === TabView.EXTEND && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
-               <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
+               <h2 className="text-2xl font-bold text-slate-800 dark:text-white mb-6 flex items-center">
                 <Send className="w-6 h-6 mr-3 text-orange-500" />
                 Extend: Conclusion
               </h2>
@@ -1144,17 +1178,17 @@ const App: React.FC = () => {
                 />
                 
                 {/* Calendar Section (Moved from Summary) */}
-                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-6">
-                   <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
-                     <h3 className="text-sm font-semibold text-slate-700 flex items-center">
-                       <Calendar className="w-4 h-4 mr-2 text-indigo-600" />
+                <div className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden mb-6">
+                   <div className="bg-slate-50 dark:bg-slate-900 px-4 py-2 border-b border-slate-200 dark:border-slate-700 flex justify-between items-center">
+                     <h3 className="text-sm font-semibold text-slate-700 dark:text-slate-300 flex items-center">
+                       <Calendar className="w-4 h-4 mr-2 text-indigo-600 dark:text-indigo-400" />
                        Check Availability
                      </h3>
                       <div className="relative group">
                          <input 
                           type="email"
                           placeholder="your.email@gmail.com"
-                          className="text-xs bg-white border border-slate-300 rounded px-2 py-1 w-48 focus:ring-1 focus:ring-indigo-500 outline-none"
+                          className="text-xs bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-600 text-slate-800 dark:text-slate-200 rounded px-2 py-1 w-48 focus:ring-1 focus:ring-indigo-500 outline-none"
                           value={coachEmail}
                           onChange={(e) => setCoachEmail(e.target.value)}
                           title="Enter your Google email to see your specific calendar"
@@ -1175,19 +1209,19 @@ const App: React.FC = () => {
                    ></iframe>
                  </div>
 
-                <div className="bg-orange-50 p-6 rounded-lg border border-orange-100 flex flex-col md:flex-row md:items-end gap-4 justify-between">
+                <div className="bg-orange-50 dark:bg-orange-900/20 p-6 rounded-lg border border-orange-100 dark:border-orange-800/50 flex flex-col md:flex-row md:items-end gap-4 justify-between">
                    <div className="flex-grow">
-                     <label className="block text-sm font-semibold text-orange-900 mb-1">When are we meeting next?</label>
+                     <label className="block text-sm font-semibold text-orange-900 dark:text-orange-200 mb-1">When are we meeting next?</label>
                      <input 
                       type="datetime-local" 
-                      className="w-full bg-white border border-orange-200 rounded px-3 py-2 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
+                      className="w-full bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-800 rounded px-3 py-2 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-orange-400 outline-none"
                       value={data.extend.nextMeeting}
                       onChange={(e) => updateSection('extend', 'nextMeeting', e.target.value)}
                      />
                    </div>
                    
                    <div className="flex-grow">
-                     <label className="block text-sm font-semibold text-orange-900 mb-1">Google API Key</label>
+                     <label className="block text-sm font-semibold text-orange-900 dark:text-orange-200 mb-1">Google API Key</label>
                      <div className="relative">
                         <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                           <Key className="h-4 w-4 text-orange-400" />
@@ -1195,7 +1229,7 @@ const App: React.FC = () => {
                         <input 
                           type="password" 
                           placeholder="Paste API Key (starts with AIza...)"
-                          className="w-full bg-white border border-orange-200 rounded px-3 py-2 pl-9 text-slate-700 focus:ring-2 focus:ring-orange-400 outline-none"
+                          className="w-full bg-white dark:bg-slate-800 border border-orange-200 dark:border-orange-800 rounded px-3 py-2 pl-9 text-slate-700 dark:text-slate-200 focus:ring-2 focus:ring-orange-400 outline-none"
                           value={apiKey}
                           onChange={(e) => setApiKey(e.target.value)}
                         />
@@ -1205,7 +1239,7 @@ const App: React.FC = () => {
                    <button 
                     onClick={handleGenerateSummary}
                     disabled={isGenerating}
-                    className="flex items-center justify-center space-x-2 bg-slate-800 hover:bg-slate-900 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap h-11"
+                    className="flex items-center justify-center space-x-2 bg-slate-800 dark:bg-slate-700 hover:bg-slate-900 dark:hover:bg-slate-600 text-white px-6 py-2.5 rounded-lg font-medium transition-all shadow-lg hover:shadow-xl disabled:opacity-70 disabled:cursor-not-allowed whitespace-nowrap h-11"
                    >
                      <Sparkles className="w-4 h-4" />
                      <span>Finish & Summarise</span>
@@ -1215,7 +1249,7 @@ const App: React.FC = () => {
                <div className="mt-8 flex justify-start">
                 <button 
                   onClick={() => setActiveTab(TabView.EXPRESS)} 
-                  className="flex items-center px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
                 >
                   <ChevronLeft className="w-5 h-5 mr-2"/> Back
                 </button>
@@ -1227,15 +1261,15 @@ const App: React.FC = () => {
           {activeTab === TabView.SUMMARY && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 h-full flex flex-col">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                  <Sparkles className="w-6 h-6 mr-3 text-indigo-600" />
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-white flex items-center">
+                  <Sparkles className="w-6 h-6 mr-3 text-indigo-600 dark:text-indigo-400" />
                   Session Summary
                 </h2>
                 
                 <div className="flex space-x-2">
                   <button 
                     onClick={handleDownloadFullNotes}
-                    className="flex items-center px-4 py-2 bg-slate-100 text-slate-700 border border-slate-200 rounded-lg hover:bg-slate-200 transition-colors text-sm font-medium shadow-sm"
+                    className="flex items-center px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors text-sm font-medium shadow-sm"
                   >
                      <FileText className="w-4 h-4 mr-2" /> 
                      Download Full Notes
@@ -1250,11 +1284,11 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
-              <p className="text-slate-500 mb-4">Generated by Gemini. Review before sending.</p>
+              <p className="text-slate-500 dark:text-slate-400 mb-4">Generated by Gemini. Review before sending.</p>
               
               <div className="flex-grow relative">
                 <textarea 
-                  className="w-full h-full p-4 bg-slate-50 border border-slate-200 rounded-lg text-slate-700 font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  className="w-full h-full p-4 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-lg text-slate-700 dark:text-slate-200 font-mono text-sm resize-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
                   value={generatedSummary}
                   onChange={(e) => setGeneratedSummary(e.target.value)}
                   style={{ minHeight: '500px' }}
@@ -1262,7 +1296,7 @@ const App: React.FC = () => {
                 <div className="absolute top-4 right-4 flex space-x-2">
                   <button 
                     onClick={handleDownloadSummary}
-                    className="bg-white p-2 rounded-md shadow-sm border border-slate-200 text-slate-500 hover:text-green-600 hover:border-green-300 transition-colors"
+                    className="bg-white dark:bg-slate-800 p-2 rounded-md shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:border-green-300 transition-colors"
                     title="Download as Text File"
                   >
                     <Download className="w-5 h-5" />
@@ -1272,7 +1306,7 @@ const App: React.FC = () => {
                       navigator.clipboard.writeText(generatedSummary);
                       alert("Copied to clipboard!");
                     }}
-                    className="bg-white p-2 rounded-md shadow-sm border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 transition-colors"
+                    className="bg-white dark:bg-slate-800 p-2 rounded-md shadow-sm border border-slate-200 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:border-indigo-300 transition-colors"
                     title="Copy to Clipboard"
                   >
                     <Copy className="w-5 h-5" />
@@ -1282,13 +1316,13 @@ const App: React.FC = () => {
 
                {/* Schedule Next Session Section (Reverted to single row/button style) */}
                <div className="mt-6">
-                 <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col md:flex-row items-center justify-between">
+                 <div className="p-6 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-lg flex flex-col md:flex-row items-center justify-between">
                    <div className="mb-4 md:mb-0">
-                     <h3 className="text-indigo-900 font-bold text-lg flex items-center mb-1">
+                     <h3 className="text-indigo-900 dark:text-indigo-300 font-bold text-lg flex items-center mb-1">
                        <Calendar className="w-5 h-5 mr-2" />
                        Schedule Next Session
                      </h3>
-                     <p className="text-sm text-indigo-700">
+                     <p className="text-sm text-indigo-700 dark:text-indigo-300">
                        Target Date: <span className="font-semibold">{data.extend.nextMeeting 
                          ? new Date(data.extend.nextMeeting).toLocaleString() 
                          : "Not selected (Set in Extend tab)"}</span>
@@ -1299,7 +1333,7 @@ const App: React.FC = () => {
                      href={getGoogleCalendarUrl()}
                      target="_blank"
                      rel="noopener noreferrer"
-                     className="flex items-center justify-center px-6 py-3 bg-white text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors font-bold shadow-sm"
+                     className="flex items-center justify-center px-6 py-3 bg-white dark:bg-slate-800 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-700 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors font-bold shadow-sm"
                    >
                      <ExternalLink className="w-5 h-5 mr-2" />
                      Create Event on Google Calendar
@@ -1310,13 +1344,13 @@ const App: React.FC = () => {
                <div className="mt-6 flex justify-between">
                 <button 
                   onClick={() => setActiveTab(TabView.EXTEND)} 
-                  className="flex items-center px-6 py-3 bg-white border border-slate-300 text-slate-700 rounded-lg font-semibold hover:bg-slate-50 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-white dark:bg-slate-700 border border-slate-300 dark:border-slate-600 text-slate-700 dark:text-slate-200 rounded-lg font-semibold hover:bg-slate-50 dark:hover:bg-slate-600 transition-colors shadow-sm"
                 >
                   <ChevronLeft className="w-5 h-5 mr-2"/> Back to Edit
                 </button>
                 <button 
                   onClick={handleClear} 
-                  className="flex items-center px-6 py-3 bg-red-50 text-red-600 border border-red-200 rounded-lg font-semibold hover:bg-red-100 transition-colors shadow-sm"
+                  className="flex items-center px-6 py-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-lg font-semibold hover:bg-red-100 dark:hover:bg-red-900/30 transition-colors shadow-sm"
                 >
                   Start New Session
                 </button>
