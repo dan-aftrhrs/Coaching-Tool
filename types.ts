@@ -1,3 +1,4 @@
+
 export interface MeetingHistoryItem {
   date: string;
   summary: string;
@@ -25,6 +26,7 @@ export interface ExploreSection {
 }
 
 export interface ExpressSection {
+  nextStepsThinking: string;
   firstSteps: string;
   stickToIt: string;
   whenWillYouDoThis: string;

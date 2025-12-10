@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect, useRef } from 'react';
 import { 
   BookOpen, 
@@ -17,7 +18,9 @@ import {
   Calendar,
   AlertTriangle,
   FileText,
-  Key
+  Key,
+  ExternalLink,
+  Settings
 } from 'lucide-react';
 import { SessionData, TabView } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -45,6 +48,7 @@ const INITIAL_DATA: SessionData = {
     conversationNotes: ''
   },
   express: {
+    nextStepsThinking: '',
     firstSteps: '',
     stickToIt: '',
     whenWillYouDoThis: '',
@@ -85,6 +89,11 @@ const App: React.FC = () => {
           parsed.profile.meetingHistory = [];
         }
 
+        // Migration: Ensure nextStepsThinking exists
+        if (parsed.express.nextStepsThinking === undefined) {
+          parsed.express.nextStepsThinking = '';
+        }
+
         // Migration: Ensure actionSteps array exists
         if (!parsed.express.actionSteps) {
           parsed.express.actionSteps = [
@@ -116,6 +125,7 @@ const App: React.FC = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState<string>('');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
+  const [coachEmail, setCoachEmail] = useState(() => localStorage.getItem('coach_email') || '');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -127,6 +137,10 @@ const App: React.FC = () => {
       localStorage.setItem('gemini_api_key', apiKey.trim());
     }
   }, [apiKey]);
+
+  useEffect(() => {
+    localStorage.setItem('coach_email', coachEmail.trim());
+  }, [coachEmail]);
 
   // Sync Profile Vision & I AMs to Explore tab automatically
   useEffect(() => {
@@ -186,13 +200,15 @@ const App: React.FC = () => {
     lines.push(`Conversation Notes:\n${data.explore.conversationNotes || 'N/A'}`);
 
     lines.push('\n[EXPRESS]');
+    lines.push(`What do you think are your next steps?\n${data.express.nextStepsThinking || 'N/A'}`);
     lines.push(`What are the very first steps?\n${data.express.firstSteps || 'N/A'}`);
-    lines.push(`Why is this important?\n${data.express.stickToIt || 'N/A'}`);
+    lines.push(`Why is this important?\n${data.express.importance || 'N/A'}`);
     lines.push(`When will you do this?\n${data.express.whenWillYouDoThis || 'N/A'}`);
     lines.push(`What stops you? (Obstacles):\n${data.express.obstacles || 'N/A'}`);
     lines.push(`Accountability: Who can you tell?\n${data.express.whoToTell || 'N/A'}`);
     lines.push(`Consequences / Sacrifices:\n${data.express.sacrifices || 'N/A'}`);
-    lines.push(`What can you stick to even on your worst days?\n${data.express.importance || 'N/A'}`);
+    
+    lines.push(`What is your worst day plan?\n${data.express.stickToIt || 'N/A'}`);
     lines.push(`Helpful reminders (visual cues):\n${data.express.visualCue || 'N/A'}`);
     lines.push(`Encouragement / Coach Input:\n${data.express.encouragement || 'N/A'}`);
     
@@ -231,6 +247,29 @@ const App: React.FC = () => {
     setGeneratedSummary(summary);
     setIsGenerating(false);
     setActiveTab(TabView.SUMMARY);
+  };
+
+  // --- Google Calendar Link Generator ---
+  const getGoogleCalendarUrl = () => {
+    const baseUrl = "https://calendar.google.com/calendar/render?action=TEMPLATE";
+    const title = encodeURIComponent(`Coaching: ${data.coacheeName || 'Session'}`);
+    // Truncate details if too long to avoid URL limit issues
+    const safeSummary = generatedSummary.length > 800 ? generatedSummary.substring(0, 800) + "..." : generatedSummary;
+    const details = encodeURIComponent(safeSummary || "Notes from coaching session.");
+    
+    let datesParam = "";
+    if (data.extend.nextMeeting) {
+      // datetime-local gives YYYY-MM-DDTHH:mm
+      // Create date object, assuming local time as selected by user
+      const startDate = new Date(data.extend.nextMeeting);
+      const endDate = new Date(startDate.getTime() + 60 * 60 * 1000); // Default 1 hour duration
+      
+      // Format to YYYYMMDDTHHmmSSZ (UTC) for Google Calendar
+      const format = (d: Date) => d.toISOString().replace(/-|:|\.\d\d\d/g, "");
+      datesParam = `&dates=${format(startDate)}/${format(endDate)}`;
+    }
+    
+    return `${baseUrl}&text=${title}&details=${details}${datesParam}`;
   };
 
   // --- Profile File Management ---
@@ -371,13 +410,13 @@ const App: React.FC = () => {
   const NavButton = ({ tab, icon: Icon, label }: { tab: TabView, icon: any, label: string }) => (
     <button
       onClick={() => setActiveTab(tab)}
-      className={`flex items-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 w-full md:w-auto flex-shrink-0
+      className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 flex-grow md:flex-grow-0
         ${activeTab === tab 
           ? 'bg-blue-600 text-white shadow-md' 
           : 'bg-white text-slate-600 hover:bg-slate-100'}`}
     >
       <Icon size={18} />
-      <span className="font-medium">{label}</span>
+      <span className="font-medium whitespace-nowrap">{label}</span>
     </button>
   );
 
@@ -420,14 +459,14 @@ const App: React.FC = () => {
       {/* Main Content Area */}
       <main className="max-w-5xl mx-auto px-4 py-6">
         
-        {/* Navigation Tabs (Mobile optimised: scrollable) */}
-        <div className="flex overflow-x-auto space-x-2 mb-6 pb-2 md:pb-0 scrollbar-hide">
+        {/* Navigation Tabs (Mobile optimised: wrapping) */}
+        <div className="flex flex-wrap gap-2 mb-6">
           <NavButton tab={TabView.PROFILE} icon={User} label="Profile" />
           <NavButton tab={TabView.ENGAGE} icon={MessageCircle} label="Engage" />
           <NavButton tab={TabView.EXPLORE} icon={BookOpen} label="Explore" />
           <NavButton tab={TabView.EXPRESS} icon={Footprints} label="Express" />
           <NavButton tab={TabView.EXTEND} icon={Send} label="Extend" />
-          {generatedSummary && <NavButton tab={TabView.SUMMARY} icon={Save} label="Summary" />}
+          <NavButton tab={TabView.SUMMARY} icon={Save} label="Summary" />
         </div>
 
         {/* Content Containers */}
@@ -631,19 +670,19 @@ const App: React.FC = () => {
                 {/* Left Column: Toolkit */}
                 <div className="md:col-span-1 space-y-4">
                   <div className="bg-slate-100 p-4 rounded-lg">
-                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Coach's Toolkit</h3>
+                    <h3 className="font-semibold text-slate-700 mb-3 text-sm uppercase tracking-wide">Tips</h3>
                     
                     <QuestionBank 
                       title="Direction Questions" 
                       questions={[
                         "What's on your mind?",
                         "What's the real challenge in that for you?",
-                        "What do you want? (Positive 'I want...')",
-                        "What result would you like to take away?",
+                        "What do you mean by ____?",
                         "What about that is important to you?",
+                        "What do you want? (Positive 'I want...')",
                         "What would achieving that do for you/others?",
                         "What's the bigger issue behind the situation?",
-                        "What do you mean by ____?",
+                        "What result would you like to take away?",
                         "What part of that problem would you like to work on right now?"
                       ]} 
                     />
@@ -698,18 +737,30 @@ const App: React.FC = () => {
                 <Footprints className="w-6 h-6 mr-3 text-green-500" />
                 Express: Action Planning
               </h2>
+
+              {/* Top Box: Next Steps Thinking */}
+              <div className="mb-8">
+                 <TextArea 
+                  label="What do you think are your next steps?" 
+                  placeholder="Brainstorming next steps..."
+                  value={data.express.nextStepsThinking}
+                  onChange={(v) => updateSection('express', 'nextStepsThinking', v)}
+                  rows={4}
+                  className="w-full"
+                />
+              </div>
               
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                  <TextArea 
-                  label="What are the very first steps?" 
+                  label="Tell me your very first step?" 
                   placeholder="Immediate action after this call"
                   value={data.express.firstSteps}
                   onChange={(v) => updateSection('express', 'firstSteps', v)}
                 />
-                <TextArea 
-                  label="What could help you even on your worst days?" 
-                  value={data.express.stickToIt}
-                  onChange={(v) => updateSection('express', 'stickToIt', v)}
+                 <TextArea 
+                  label="Why is this important?" 
+                  value={data.express.importance}
+                  onChange={(v) => updateSection('express', 'importance', v)}
                 />
                 <TextArea 
                   label="When will you do this?" 
@@ -732,13 +783,13 @@ const App: React.FC = () => {
                   value={data.express.sacrifices}
                   onChange={(v) => updateSection('express', 'sacrifices', v)}
                 />
-                 <TextArea 
-                  label="Why is this important?" 
-                  value={data.express.importance}
-                  onChange={(v) => updateSection('express', 'importance', v)}
+                <TextArea 
+                  label="What is your worst day plan?" 
+                  value={data.express.stickToIt}
+                  onChange={(v) => updateSection('express', 'stickToIt', v)}
                 />
                  <TextArea 
-                  label="Helpful reminders (visual cues?)" 
+                  label="Helpful reminders (visual? automated?)" 
                   value={data.express.visualCue}
                   onChange={(v) => updateSection('express', 'visualCue', v)}
                 />
@@ -833,6 +884,38 @@ const App: React.FC = () => {
                   rows={4}
                 />
                 
+                {/* Calendar Section (Moved from Summary) */}
+                <div className="bg-white rounded-lg border border-slate-200 shadow-sm overflow-hidden mb-6">
+                   <div className="bg-slate-50 px-4 py-2 border-b border-slate-200 flex justify-between items-center">
+                     <h3 className="text-sm font-semibold text-slate-700 flex items-center">
+                       <Calendar className="w-4 h-4 mr-2 text-indigo-600" />
+                       Check Availability
+                     </h3>
+                      <div className="relative group">
+                         <input 
+                          type="email"
+                          placeholder="your.email@gmail.com"
+                          className="text-xs bg-white border border-slate-300 rounded px-2 py-1 w-48 focus:ring-1 focus:ring-indigo-500 outline-none"
+                          value={coachEmail}
+                          onChange={(e) => setCoachEmail(e.target.value)}
+                          title="Enter your Google email to see your specific calendar"
+                         />
+                         <div className="hidden group-hover:block absolute top-full right-0 mt-1 w-64 bg-slate-800 text-white text-xs p-2 rounded z-10 shadow-lg">
+                           Enter your email to display your public/private calendar. If it shows 'Events', you may need to log in to Google in this browser.
+                         </div>
+                      </div>
+                   </div>
+                   <iframe 
+                     src={`https://calendar.google.com/calendar/embed?height=400&wkst=1&bgcolor=%23ffffff&ctz=Europe%2FLondon&src=${encodeURIComponent(coachEmail || 'en.uk#holiday@group.v.calendar.google.com')}&color=%23039BE5`} 
+                     style={{borderWidth: 0}} 
+                     width="100%" 
+                     height="400" 
+                     frameBorder="0" 
+                     scrolling="no"
+                     title="Google Calendar"
+                   ></iframe>
+                 </div>
+
                 <div className="bg-orange-50 p-6 rounded-lg border border-orange-100 flex flex-col md:flex-row md:items-end gap-4 justify-between">
                    <div className="flex-grow">
                      <label className="block text-sm font-semibold text-orange-900 mb-1">When are we meeting next?</label>
@@ -937,6 +1020,33 @@ const App: React.FC = () => {
                   </button>
                 </div>
               </div>
+
+               {/* Schedule Next Session Section (Reverted to single row/button style) */}
+               <div className="mt-6">
+                 <div className="p-6 bg-indigo-50 border border-indigo-100 rounded-lg flex flex-col md:flex-row items-center justify-between">
+                   <div className="mb-4 md:mb-0">
+                     <h3 className="text-indigo-900 font-bold text-lg flex items-center mb-1">
+                       <Calendar className="w-5 h-5 mr-2" />
+                       Schedule Next Session
+                     </h3>
+                     <p className="text-sm text-indigo-700">
+                       Target Date: <span className="font-semibold">{data.extend.nextMeeting 
+                         ? new Date(data.extend.nextMeeting).toLocaleString() 
+                         : "Not selected (Set in Extend tab)"}</span>
+                     </p>
+                   </div>
+                   
+                   <a
+                     href={getGoogleCalendarUrl()}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="flex items-center justify-center px-6 py-3 bg-white text-indigo-700 border border-indigo-200 rounded-lg hover:bg-indigo-600 hover:text-white transition-colors font-bold shadow-sm"
+                   >
+                     <ExternalLink className="w-5 h-5 mr-2" />
+                     Create Event on Google Calendar
+                   </a>
+                 </div>
+               </div>
               
                <div className="mt-6 flex justify-between">
                 <button 
