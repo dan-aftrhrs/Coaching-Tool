@@ -22,7 +22,8 @@ import {
   ExternalLink,
   Settings,
   X,
-  RotateCcw
+  RotateCcw,
+  Compass
 } from 'lucide-react';
 import { SessionData, TabView, LabelConfig } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
@@ -43,7 +44,8 @@ const INITIAL_DATA: SessionData = {
     wins: '',
     improvements: '',
     nextStepForward: '',
-    learning: ''
+    learning: '',
+    previousActionSteps: ''
   },
   explore: {
     foundationIams: '',
@@ -73,16 +75,16 @@ const DEFAULT_LABELS: LabelConfig = {
   engage: {
     goodnessOfGod: "Where have you seen the goodness of God lately?",
     wins: "What wins have you noticed?",
-    learning: "What are you learning?",
+    learning: "What is God teaching you?",
     improvements: "What could you improve?",
-    nextStepForward: "What's the next step forward?"
+    nextStepForward: "What can you do differently? (if relevant)"
   },
   express: {
     nextStepsThinking: "What do you think are your next steps?",
     firstSteps: "Tell me your very first step?",
     importance: "Why is this important?",
     whenWillYouDoThis: "When will you do this?",
-    obstacles: "What stops you? (Obstacles & Plan)",
+    obstacles: "What's the hardest part about this?",
     whoToTell: "Accountability: Who can you tell?",
     sacrifices: "Consequences / Sacrifices (Saying No)",
     stickToIt: "What is your worst day plan?",
@@ -256,6 +258,11 @@ const App: React.FC = () => {
         if (parsed.express.encouragement === undefined) {
           parsed.express.encouragement = '';
         }
+        
+        // Migration: Ensure engage.previousActionSteps exists
+        if (parsed.engage.previousActionSteps === undefined) {
+          parsed.engage.previousActionSteps = '';
+        }
 
         return parsed;
       } catch (e) {
@@ -361,6 +368,9 @@ const App: React.FC = () => {
     lines.push(`Vision:\n${data.profile.vision || 'N/A'}`);
 
     lines.push('\n[ENGAGE]');
+    if (data.engage.previousActionSteps) {
+       lines.push(`Previous Action Steps:\n${data.engage.previousActionSteps}`);
+    }
     lines.push(`${labels.engage.goodnessOfGod}\n${data.engage.goodnessOfGod || 'N/A'}`);
     lines.push(`${labels.engage.wins}\n${data.engage.wins || 'N/A'}`);
     lines.push(`${labels.engage.learning}\n${data.engage.learning || 'N/A'}`);
@@ -506,6 +516,20 @@ const App: React.FC = () => {
       try {
         const json = JSON.parse(e.target?.result as string);
         
+        // Extract Previous Actions from history if available
+        let extractedActions = '';
+        const history = Array.isArray(json.profile.meetingHistory) ? json.profile.meetingHistory : [];
+        if (history.length > 0) {
+            const lastSummary = history[history.length - 1].summary;
+            if (lastSummary && lastSummary.includes('Actions:')) {
+                // Split by 'Actions:' and take the second part
+                const parts = lastSummary.split('Actions:');
+                if (parts.length > 1) {
+                    extractedActions = parts[1].trim();
+                }
+            }
+        }
+
         // Validate structure roughly
         if (json.profile) {
           setData(prev => ({
@@ -516,7 +540,11 @@ const App: React.FC = () => {
               iamStatements: json.profile.iamStatements || '',
               vision: json.profile.vision || '',
               pastMeetings: json.profile.pastMeetings || '',
-              meetingHistory: Array.isArray(json.profile.meetingHistory) ? json.profile.meetingHistory : []
+              meetingHistory: history
+            },
+            engage: {
+                ...prev.engage,
+                previousActionSteps: extractedActions
             }
           }));
           alert("Profile loaded successfully!");
@@ -650,7 +678,7 @@ const App: React.FC = () => {
         <div className="flex flex-wrap gap-2 mb-6">
           <NavButton tab={TabView.PROFILE} activeTab={activeTab} onClick={setActiveTab} icon={User} label="Profile" />
           <NavButton tab={TabView.ENGAGE} activeTab={activeTab} onClick={setActiveTab} icon={MessageCircle} label="Engage" />
-          <NavButton tab={TabView.EXPLORE} activeTab={activeTab} onClick={setActiveTab} icon={BookOpen} label="Explore" />
+          <NavButton tab={TabView.EXPLORE} activeTab={activeTab} onClick={setActiveTab} icon={Compass} label="Explore" />
           <NavButton tab={TabView.EXPRESS} activeTab={activeTab} onClick={setActiveTab} icon={Footprints} label="Express" />
           <NavButton tab={TabView.EXTEND} activeTab={activeTab} onClick={setActiveTab} icon={Send} label="Extend" />
           <NavButton tab={TabView.SUMMARY} activeTab={activeTab} onClick={setActiveTab} icon={Save} label="Summary" />
@@ -790,6 +818,26 @@ const App: React.FC = () => {
                 </button>
               </div>
 
+               {/* Previous Actions Display Block */}
+               {data.engage.previousActionSteps && (
+                <div className="mb-6 bg-yellow-50 border border-yellow-200 rounded-lg p-4 flex items-start">
+                  <AlertTriangle className="w-5 h-5 text-yellow-600 mr-3 flex-shrink-0 mt-0.5" />
+                  <div className="flex-grow">
+                    <h3 className="text-sm font-bold text-yellow-800 mb-1">Actions from Last Session</h3>
+                    <div className="text-sm text-yellow-800 whitespace-pre-line leading-relaxed">
+                      {data.engage.previousActionSteps}
+                    </div>
+                  </div>
+                   <button 
+                    onClick={() => updateSection('engage', 'previousActionSteps', '')}
+                    className="ml-2 text-yellow-400 hover:text-yellow-600"
+                    title="Dismiss"
+                   >
+                     <X size={16} />
+                   </button>
+                </div>
+              )}
+
               <div className="grid md:grid-cols-2 gap-6 flex-grow">
                 <div className="md:col-span-2">
                   <TextArea 
@@ -842,7 +890,7 @@ const App: React.FC = () => {
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-slate-800 flex items-center">
-                  <BookOpen className="w-6 h-6 mr-3 text-purple-500" />
+                  <Compass className="w-6 h-6 mr-3 text-purple-500" />
                   Explore: Deep Dive
                 </h2>
               </div>
@@ -873,13 +921,13 @@ const App: React.FC = () => {
                       title="Direction Questions" 
                       questions={[
                         "What's on your mind?",
+                        "What would you like to take away after today?",
                         "What's the real challenge in that for you?",
                         "What do you mean by ____?",
                         "What about that is important to you?",
                         "What do you want? (Positive 'I want...')",
                         "What would achieving that do for you/others?",
                         "What's the bigger issue behind the situation?",
-                        "What result would you like to take away?",
                         "What part of that problem would you like to work on right now?"
                       ]} 
                     />
@@ -956,6 +1004,7 @@ const App: React.FC = () => {
                 />
               </div>
               
+              {/* First Steps & Importance */}
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                  <TextArea 
                   label={labels.express.firstSteps}
@@ -968,40 +1017,9 @@ const App: React.FC = () => {
                   value={data.express.importance}
                   onChange={(v) => updateSection('express', 'importance', v)}
                 />
-                <TextArea 
-                  label={labels.express.whenWillYouDoThis}
-                  value={data.express.whenWillYouDoThis}
-                  onChange={(v) => updateSection('express', 'whenWillYouDoThis', v)}
-                />
-                 <TextArea 
-                  label={labels.express.obstacles}
-                  placeholder="Obstacles / Plan to overcome"
-                  value={data.express.obstacles}
-                  onChange={(v) => updateSection('express', 'obstacles', v)}
-                />
-                 <TextArea 
-                  label={labels.express.whoToTell}
-                  value={data.express.whoToTell}
-                  onChange={(v) => updateSection('express', 'whoToTell', v)}
-                />
-                 <TextArea 
-                  label={labels.express.sacrifices}
-                  value={data.express.sacrifices}
-                  onChange={(v) => updateSection('express', 'sacrifices', v)}
-                />
-                <TextArea 
-                  label={labels.express.stickToIt}
-                  value={data.express.stickToIt}
-                  onChange={(v) => updateSection('express', 'stickToIt', v)}
-                />
-                 <TextArea 
-                  label={labels.express.visualCue}
-                  value={data.express.visualCue}
-                  onChange={(v) => updateSection('express', 'visualCue', v)}
-                />
               </div>
 
-              {/* Flexible Plan Section */}
+              {/* Flexible Plan Section (Moved Up) */}
               <div className="bg-green-50 p-6 rounded-lg border border-green-100 mb-8">
                 <div className="flex justify-between items-center mb-4">
                   <h3 className="text-lg font-semibold text-green-900">The Plan</h3>
@@ -1037,9 +1055,45 @@ const App: React.FC = () => {
                     <Plus size={18} className="mr-1" /> Add Action Step
                   </button>
                 </div>
-                
-                {/* Encouragement Box */}
-                <div className="mt-6 border-t border-green-200 pt-6">
+              </div>
+
+              {/* Remaining Express Questions */}
+              <div className="grid md:grid-cols-2 gap-6 mb-8">
+                <TextArea 
+                  label={labels.express.whenWillYouDoThis}
+                  value={data.express.whenWillYouDoThis}
+                  onChange={(v) => updateSection('express', 'whenWillYouDoThis', v)}
+                />
+                 <TextArea 
+                  label={labels.express.obstacles}
+                  placeholder="Obstacles / Plan to overcome"
+                  value={data.express.obstacles}
+                  onChange={(v) => updateSection('express', 'obstacles', v)}
+                />
+                 <TextArea 
+                  label={labels.express.whoToTell}
+                  value={data.express.whoToTell}
+                  onChange={(v) => updateSection('express', 'whoToTell', v)}
+                />
+                 <TextArea 
+                  label={labels.express.sacrifices}
+                  value={data.express.sacrifices}
+                  onChange={(v) => updateSection('express', 'sacrifices', v)}
+                />
+                <TextArea 
+                  label={labels.express.stickToIt}
+                  value={data.express.stickToIt}
+                  onChange={(v) => updateSection('express', 'stickToIt', v)}
+                />
+                 <TextArea 
+                  label={labels.express.visualCue}
+                  value={data.express.visualCue}
+                  onChange={(v) => updateSection('express', 'visualCue', v)}
+                />
+              </div>
+
+              {/* Encouragement Box (Moved to Bottom) */}
+              <div className="mb-8 pt-6 border-t border-slate-200">
                    <TextArea 
                     label={labels.express.encouragement}
                     placeholder="Write a note of encouragement for the coachee..."
@@ -1047,7 +1101,6 @@ const App: React.FC = () => {
                     onChange={(v) => updateSection('express', 'encouragement', v)}
                     className="mb-0"
                   />
-                </div>
               </div>
 
               <div className="mt-8 flex justify-between">

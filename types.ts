@@ -17,6 +17,7 @@ export interface EngageSection {
   improvements: string;
   nextStepForward: string;
   learning: string;
+  previousActionSteps?: string;
 }
 
 export interface ExploreSection {
