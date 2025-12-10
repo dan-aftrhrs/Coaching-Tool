@@ -55,6 +55,28 @@ export interface SessionData {
   extend: ExtendSection;
 }
 
+export interface LabelConfig {
+  engage: {
+    goodnessOfGod: string;
+    wins: string;
+    learning: string;
+    improvements: string;
+    nextStepForward: string;
+  };
+  express: {
+    nextStepsThinking: string;
+    firstSteps: string;
+    importance: string;
+    whenWillYouDoThis: string;
+    obstacles: string;
+    whoToTell: string;
+    sacrifices: string;
+    stickToIt: string;
+    visualCue: string;
+    encouragement: string;
+  };
+}
+
 export enum TabView {
   PROFILE = 'PROFILE',
   ENGAGE = 'ENGAGE',

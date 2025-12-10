@@ -20,9 +20,11 @@ import {
   FileText,
   Key,
   ExternalLink,
-  Settings
+  Settings,
+  X,
+  RotateCcw
 } from 'lucide-react';
-import { SessionData, TabView } from './types';
+import { SessionData, TabView, LabelConfig } from './types';
 import { generateSessionSummary, generateBriefSummary } from './services/geminiService';
 import { TextArea } from './components/TextArea';
 import { QuestionBank } from './components/QuestionBank';
@@ -65,6 +67,149 @@ const INITIAL_DATA: SessionData = {
     prayerPoint: '',
     nextMeeting: ''
   }
+};
+
+const DEFAULT_LABELS: LabelConfig = {
+  engage: {
+    goodnessOfGod: "Where have you seen the goodness of God lately?",
+    wins: "What wins have you noticed?",
+    learning: "What are you learning?",
+    improvements: "What could you improve?",
+    nextStepForward: "What's the next step forward?"
+  },
+  express: {
+    nextStepsThinking: "What do you think are your next steps?",
+    firstSteps: "Tell me your very first step?",
+    importance: "Why is this important?",
+    whenWillYouDoThis: "When will you do this?",
+    obstacles: "What stops you? (Obstacles & Plan)",
+    whoToTell: "Accountability: Who can you tell?",
+    sacrifices: "Consequences / Sacrifices (Saying No)",
+    stickToIt: "What is your worst day plan?",
+    visualCue: "Helpful reminders (visual? automated?)",
+    encouragement: "Encouragement & Coach Input"
+  }
+};
+
+// --- Extracted Components (Fixes focus loss issue) ---
+
+const NavButton = ({ 
+  tab, 
+  activeTab, 
+  onClick, 
+  icon: Icon, 
+  label 
+}: { 
+  tab: TabView, 
+  activeTab: TabView, 
+  onClick: (t: TabView) => void, 
+  icon: any, 
+  label: string 
+}) => (
+  <button
+    onClick={() => onClick(tab)}
+    className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 flex-grow md:flex-grow-0
+      ${activeTab === tab 
+        ? 'bg-blue-600 text-white shadow-md' 
+        : 'bg-white text-slate-600 hover:bg-slate-100'}`}
+  >
+    <Icon size={18} />
+    <span className="font-medium whitespace-nowrap">{label}</span>
+  </button>
+);
+
+interface LabelSettingsModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  labels: LabelConfig;
+  settingsTab: 'engage' | 'express';
+  setSettingsTab: (tab: 'engage' | 'express') => void;
+  handleLabelUpdate: (section: 'engage' | 'express', field: string, value: string) => void;
+  resetLabels: (section: 'engage' | 'express') => void;
+}
+
+const LabelSettingsModal: React.FC<LabelSettingsModalProps> = ({
+  isOpen,
+  onClose,
+  labels,
+  settingsTab,
+  setSettingsTab,
+  handleLabelUpdate,
+  resetLabels
+}) => {
+  if (!isOpen) return null;
+
+  const currentSection = settingsTab === 'engage' ? labels.engage : labels.express;
+  
+  const formatKey = (key: string) => {
+    return key
+      .replace(/([A-Z])/g, " $1")
+      .replace(/^./, (str) => str.toUpperCase());
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4 animate-in fade-in duration-200">
+      <div className="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto flex flex-col">
+        <div className="p-6 border-b border-slate-200 flex justify-between items-center sticky top-0 bg-white rounded-t-xl z-10">
+          <h3 className="text-xl font-bold text-slate-800 flex items-center">
+            <Settings className="w-5 h-5 mr-2" />
+            Customize Questions
+          </h3>
+          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+            <X size={24} />
+          </button>
+        </div>
+        
+        <div className="p-6 space-y-6">
+          <div className="flex space-x-2 border-b border-slate-200 pb-2">
+            <button 
+              onClick={() => setSettingsTab('engage')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'engage' ? 'bg-blue-100 text-blue-700 border-b-2 border-blue-600' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              Engage
+            </button>
+            <button 
+              onClick={() => setSettingsTab('express')}
+              className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${settingsTab === 'express' ? 'bg-green-100 text-green-700 border-b-2 border-green-600' : 'text-slate-500 hover:bg-slate-50'}`}
+            >
+              Express
+            </button>
+          </div>
+
+          <div className="space-y-6">
+            {Object.entries(currentSection).map(([key, value]) => (
+              <div key={key} className="bg-slate-50 p-4 rounded-lg border border-slate-200 shadow-sm">
+                <label className="block text-sm font-bold text-slate-800 mb-2">
+                  {formatKey(key)}
+                </label>
+                <textarea 
+                  value={value}
+                  onChange={(e) => handleLabelUpdate(settingsTab, key, e.target.value)}
+                  className="w-full px-3 py-2 bg-white border border-slate-300 rounded-md focus:ring-2 focus:ring-blue-500 outline-none text-slate-800 text-base shadow-sm"
+                  rows={2}
+                />
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="p-6 border-t border-slate-200 bg-slate-50 rounded-b-xl flex justify-between items-center">
+            <button 
+            onClick={() => resetLabels(settingsTab)}
+            className="flex items-center text-red-600 hover:text-red-700 text-sm font-medium"
+          >
+            <RotateCcw className="w-4 h-4 mr-2" /> Reset Defaults
+          </button>
+          <button 
+            onClick={onClose}
+            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold shadow-sm"
+          >
+            Save & Close
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 const App: React.FC = () => {
@@ -121,16 +266,42 @@ const App: React.FC = () => {
     return INITIAL_DATA;
   });
 
+  const [labels, setLabels] = useState<LabelConfig>(() => {
+    const savedLabels = localStorage.getItem('coachingLabels');
+    if (savedLabels) {
+      try {
+        const parsed = JSON.parse(savedLabels);
+        // Merge with defaults to ensure all keys exist if schema changes
+        return {
+          engage: { ...DEFAULT_LABELS.engage, ...parsed.engage },
+          express: { ...DEFAULT_LABELS.express, ...parsed.express }
+        };
+      } catch (e) {
+        return DEFAULT_LABELS;
+      }
+    }
+    return DEFAULT_LABELS;
+  });
+
   const [activeTab, setActiveTab] = useState<TabView>(TabView.PROFILE);
   const [isGenerating, setIsGenerating] = useState(false);
   const [generatedSummary, setGeneratedSummary] = useState<string>('');
   const [apiKey, setApiKey] = useState(() => localStorage.getItem('gemini_api_key') || '');
   const [coachEmail, setCoachEmail] = useState(() => localStorage.getItem('coach_email') || '');
+  
+  // Settings Modal State
+  const [showLabelSettings, setShowLabelSettings] = useState(false);
+  const [settingsTab, setSettingsTab] = useState<'engage' | 'express'>('engage');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     localStorage.setItem('coachingSession', JSON.stringify(data));
   }, [data]);
+
+  useEffect(() => {
+    localStorage.setItem('coachingLabels', JSON.stringify(labels));
+  }, [labels]);
 
   useEffect(() => {
     if (apiKey) {
@@ -190,27 +361,27 @@ const App: React.FC = () => {
     lines.push(`Vision:\n${data.profile.vision || 'N/A'}`);
 
     lines.push('\n[ENGAGE]');
-    lines.push(`Where have you seen the goodness of God lately?\n${data.engage.goodnessOfGod || 'N/A'}`);
-    lines.push(`What wins have you noticed?\n${data.engage.wins || 'N/A'}`);
-    lines.push(`What are you learning?\n${data.engage.learning || 'N/A'}`);
-    lines.push(`What could you improve?\n${data.engage.improvements || 'N/A'}`);
-    lines.push(`What's the next step forward?\n${data.engage.nextStepForward || 'N/A'}`);
+    lines.push(`${labels.engage.goodnessOfGod}\n${data.engage.goodnessOfGod || 'N/A'}`);
+    lines.push(`${labels.engage.wins}\n${data.engage.wins || 'N/A'}`);
+    lines.push(`${labels.engage.learning}\n${data.engage.learning || 'N/A'}`);
+    lines.push(`${labels.engage.improvements}\n${data.engage.improvements || 'N/A'}`);
+    lines.push(`${labels.engage.nextStepForward}\n${data.engage.nextStepForward || 'N/A'}`);
 
     lines.push('\n[EXPLORE]');
     lines.push(`Conversation Notes:\n${data.explore.conversationNotes || 'N/A'}`);
 
     lines.push('\n[EXPRESS]');
-    lines.push(`What do you think are your next steps?\n${data.express.nextStepsThinking || 'N/A'}`);
-    lines.push(`What are the very first steps?\n${data.express.firstSteps || 'N/A'}`);
-    lines.push(`Why is this important?\n${data.express.importance || 'N/A'}`);
-    lines.push(`When will you do this?\n${data.express.whenWillYouDoThis || 'N/A'}`);
-    lines.push(`What stops you? (Obstacles):\n${data.express.obstacles || 'N/A'}`);
-    lines.push(`Accountability: Who can you tell?\n${data.express.whoToTell || 'N/A'}`);
-    lines.push(`Consequences / Sacrifices:\n${data.express.sacrifices || 'N/A'}`);
+    lines.push(`${labels.express.nextStepsThinking}\n${data.express.nextStepsThinking || 'N/A'}`);
+    lines.push(`${labels.express.firstSteps}\n${data.express.firstSteps || 'N/A'}`);
+    lines.push(`${labels.express.importance}\n${data.express.importance || 'N/A'}`);
+    lines.push(`${labels.express.whenWillYouDoThis}\n${data.express.whenWillYouDoThis || 'N/A'}`);
+    lines.push(`${labels.express.obstacles}\n${data.express.obstacles || 'N/A'}`);
+    lines.push(`${labels.express.whoToTell}\n${data.express.whoToTell || 'N/A'}`);
+    lines.push(`${labels.express.sacrifices}\n${data.express.sacrifices || 'N/A'}`);
     
-    lines.push(`What is your worst day plan?\n${data.express.stickToIt || 'N/A'}`);
-    lines.push(`Helpful reminders (visual cues):\n${data.express.visualCue || 'N/A'}`);
-    lines.push(`Encouragement / Coach Input:\n${data.express.encouragement || 'N/A'}`);
+    lines.push(`${labels.express.stickToIt}\n${data.express.stickToIt || 'N/A'}`);
+    lines.push(`${labels.express.visualCue}\n${data.express.visualCue || 'N/A'}`);
+    lines.push(`${labels.express.encouragement}\n${data.express.encouragement || 'N/A'}`);
     
     lines.push('\nAction Plan:');
     if (data.express.actionSteps.some(s => s.trim())) {
@@ -407,22 +578,38 @@ const App: React.FC = () => {
     }));
   };
 
-  const NavButton = ({ tab, icon: Icon, label }: { tab: TabView, icon: any, label: string }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`flex items-center justify-center space-x-2 px-4 py-3 rounded-lg transition-all duration-200 flex-grow md:flex-grow-0
-        ${activeTab === tab 
-          ? 'bg-blue-600 text-white shadow-md' 
-          : 'bg-white text-slate-600 hover:bg-slate-100'}`}
-    >
-      <Icon size={18} />
-      <span className="font-medium whitespace-nowrap">{label}</span>
-    </button>
-  );
+  const handleLabelUpdate = (section: 'engage' | 'express', field: string, value: string) => {
+    setLabels(prev => ({
+      ...prev,
+      [section]: {
+        ...prev[section],
+        [field]: value
+      }
+    }));
+  };
+
+  const resetLabels = (section: 'engage' | 'express') => {
+    if (confirm("Reset these questions to default?")) {
+      setLabels(prev => ({
+        ...prev,
+        [section]: DEFAULT_LABELS[section]
+      }));
+    }
+  };
 
   // --- Main App Render ---
   return (
     <div className="min-h-screen bg-slate-50 pb-20">
+      <LabelSettingsModal 
+        isOpen={showLabelSettings}
+        onClose={() => setShowLabelSettings(false)}
+        labels={labels}
+        settingsTab={settingsTab}
+        setSettingsTab={setSettingsTab}
+        handleLabelUpdate={handleLabelUpdate}
+        resetLabels={resetLabels}
+      />
+
       {/* Header */}
       <header className="bg-white border-b border-slate-200 sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-4 py-3 flex justify-between items-center">
@@ -461,12 +648,12 @@ const App: React.FC = () => {
         
         {/* Navigation Tabs (Mobile optimised: wrapping) */}
         <div className="flex flex-wrap gap-2 mb-6">
-          <NavButton tab={TabView.PROFILE} icon={User} label="Profile" />
-          <NavButton tab={TabView.ENGAGE} icon={MessageCircle} label="Engage" />
-          <NavButton tab={TabView.EXPLORE} icon={BookOpen} label="Explore" />
-          <NavButton tab={TabView.EXPRESS} icon={Footprints} label="Express" />
-          <NavButton tab={TabView.EXTEND} icon={Send} label="Extend" />
-          <NavButton tab={TabView.SUMMARY} icon={Save} label="Summary" />
+          <NavButton tab={TabView.PROFILE} activeTab={activeTab} onClick={setActiveTab} icon={User} label="Profile" />
+          <NavButton tab={TabView.ENGAGE} activeTab={activeTab} onClick={setActiveTab} icon={MessageCircle} label="Engage" />
+          <NavButton tab={TabView.EXPLORE} activeTab={activeTab} onClick={setActiveTab} icon={BookOpen} label="Explore" />
+          <NavButton tab={TabView.EXPRESS} activeTab={activeTab} onClick={setActiveTab} icon={Footprints} label="Express" />
+          <NavButton tab={TabView.EXTEND} activeTab={activeTab} onClick={setActiveTab} icon={Send} label="Extend" />
+          <NavButton tab={TabView.SUMMARY} activeTab={activeTab} onClick={setActiveTab} icon={Save} label="Summary" />
         </div>
 
         {/* Content Containers */}
@@ -588,37 +775,47 @@ const App: React.FC = () => {
 
           {/* Tab: ENGAGE */}
           {activeTab === TabView.ENGAGE && (
-            <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full">
-              <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
-                <MessageCircle className="w-6 h-6 mr-3 text-blue-500" />
-                Engage: Connection & Review
-              </h2>
+            <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200 flex flex-col h-full relative">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                  <MessageCircle className="w-6 h-6 mr-3 text-blue-500" />
+                  Engage: Connection & Review
+                </h2>
+                <button 
+                  onClick={() => { setSettingsTab('engage'); setShowLabelSettings(true); }}
+                  className="p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-full transition-colors"
+                  title="Customize Questions"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
+
               <div className="grid md:grid-cols-2 gap-6 flex-grow">
                 <div className="md:col-span-2">
                   <TextArea 
-                    label="Where have you seen the goodness of God lately?" 
+                    label={labels.engage.goodnessOfGod}
                     value={data.engage.goodnessOfGod}
                     onChange={(v) => updateSection('engage', 'goodnessOfGod', v)}
                     className="mb-0"
                   />
                 </div>
                 <TextArea 
-                  label="What wins have you noticed?" 
+                  label={labels.engage.wins}
                   value={data.engage.wins}
                   onChange={(v) => updateSection('engage', 'wins', v)}
                 />
                  <TextArea 
-                  label="What are you learning?" 
+                  label={labels.engage.learning}
                   value={data.engage.learning}
                   onChange={(v) => updateSection('engage', 'learning', v)}
                 />
                 <TextArea 
-                  label="What could you improve?" 
+                  label={labels.engage.improvements}
                   value={data.engage.improvements}
                   onChange={(v) => updateSection('engage', 'improvements', v)}
                 />
                 <TextArea 
-                  label="What's the next step forward?" 
+                  label={labels.engage.nextStepForward}
                   value={data.engage.nextStepForward}
                   onChange={(v) => updateSection('engage', 'nextStepForward', v)}
                 />
@@ -733,15 +930,24 @@ const App: React.FC = () => {
           {/* Tab: EXPRESS */}
           {activeTab === TabView.EXPRESS && (
             <div className="p-6 md:p-8 animate-in fade-in zoom-in-95 duration-200">
-              <h2 className="text-2xl font-bold text-slate-800 mb-6 flex items-center">
-                <Footprints className="w-6 h-6 mr-3 text-green-500" />
-                Express: Action Planning
-              </h2>
+               <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-slate-800 flex items-center">
+                  <Footprints className="w-6 h-6 mr-3 text-green-500" />
+                  Express: Action Planning
+                </h2>
+                <button 
+                  onClick={() => { setSettingsTab('express'); setShowLabelSettings(true); }}
+                  className="p-2 text-slate-400 hover:text-green-600 hover:bg-green-50 rounded-full transition-colors"
+                  title="Customize Questions"
+                >
+                  <Settings className="w-5 h-5" />
+                </button>
+              </div>
 
               {/* Top Box: Next Steps Thinking */}
               <div className="mb-8">
                  <TextArea 
-                  label="What do you think are your next steps?" 
+                  label={labels.express.nextStepsThinking}
                   placeholder="Brainstorming next steps..."
                   value={data.express.nextStepsThinking}
                   onChange={(v) => updateSection('express', 'nextStepsThinking', v)}
@@ -752,44 +958,44 @@ const App: React.FC = () => {
               
               <div className="grid md:grid-cols-2 gap-6 mb-8">
                  <TextArea 
-                  label="Tell me your very first step?" 
+                  label={labels.express.firstSteps}
                   placeholder="Immediate action after this call"
                   value={data.express.firstSteps}
                   onChange={(v) => updateSection('express', 'firstSteps', v)}
                 />
                  <TextArea 
-                  label="Why is this important?" 
+                  label={labels.express.importance}
                   value={data.express.importance}
                   onChange={(v) => updateSection('express', 'importance', v)}
                 />
                 <TextArea 
-                  label="When will you do this?" 
+                  label={labels.express.whenWillYouDoThis}
                   value={data.express.whenWillYouDoThis}
                   onChange={(v) => updateSection('express', 'whenWillYouDoThis', v)}
                 />
                  <TextArea 
-                  label="What stops you? (Obstacles & Plan)" 
+                  label={labels.express.obstacles}
                   placeholder="Obstacles / Plan to overcome"
                   value={data.express.obstacles}
                   onChange={(v) => updateSection('express', 'obstacles', v)}
                 />
                  <TextArea 
-                  label="Accountability: Who can you tell?" 
+                  label={labels.express.whoToTell}
                   value={data.express.whoToTell}
                   onChange={(v) => updateSection('express', 'whoToTell', v)}
                 />
                  <TextArea 
-                  label="Consequences / Sacrifices (Saying No)" 
+                  label={labels.express.sacrifices}
                   value={data.express.sacrifices}
                   onChange={(v) => updateSection('express', 'sacrifices', v)}
                 />
                 <TextArea 
-                  label="What is your worst day plan?" 
+                  label={labels.express.stickToIt}
                   value={data.express.stickToIt}
                   onChange={(v) => updateSection('express', 'stickToIt', v)}
                 />
                  <TextArea 
-                  label="Helpful reminders (visual? automated?)" 
+                  label={labels.express.visualCue}
                   value={data.express.visualCue}
                   onChange={(v) => updateSection('express', 'visualCue', v)}
                 />
@@ -835,7 +1041,7 @@ const App: React.FC = () => {
                 {/* Encouragement Box */}
                 <div className="mt-6 border-t border-green-200 pt-6">
                    <TextArea 
-                    label="Encouragement & Coach Input" 
+                    label={labels.express.encouragement}
                     placeholder="Write a note of encouragement for the coachee..."
                     value={data.express.encouragement}
                     onChange={(v) => updateSection('express', 'encouragement', v)}
